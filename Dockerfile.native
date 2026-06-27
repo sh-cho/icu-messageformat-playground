@@ -9,7 +9,7 @@ FROM node:26-bookworm AS frontend
 RUN npm install -g corepack && corepack enable
 WORKDIR /src
 COPY . .
-RUN cd frontend && pnpm install --frozen-lockfile=false && pnpm run build
+RUN cd frontend && pnpm install --frozen-lockfile && pnpm run build
 
 # --- 2. Native build: trace reflection with the agent, then nativeCompile --------
 # GraalVM for JDK 25: the native-build-tools metadata repo needs the newer

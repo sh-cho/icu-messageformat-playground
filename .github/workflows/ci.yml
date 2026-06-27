@@ -19,6 +19,9 @@ jobs:
       # so the same toolchain runs in CI as locally. `./gradlew test` pulls in the
       # frontend build (processResources -> buildFrontend), hence Node + pnpm too.
       - uses: jdx/mise-action@v2
+      # Cache the Gradle dependency + build cache across runs (~/.gradle/caches and the
+      # local build cache) so PRs don't re-fetch and re-run unchanged work every time.
+      - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew test --no-daemon --stacktrace
 
   # Smoke-build the JVM image so a broken Dockerfile / AppCDS step fails a PR rather

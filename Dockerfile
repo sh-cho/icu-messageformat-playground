@@ -4,7 +4,7 @@ FROM node:26-bookworm AS frontend
 RUN npm install -g corepack && corepack enable
 WORKDIR /src
 COPY . .
-RUN cd frontend && pnpm install --frozen-lockfile=false && pnpm run build
+RUN cd frontend && pnpm install --frozen-lockfile && pnpm run build
 
 # --- 2. Fat jar (frontend tasks skipped — assets already built above) -----------
 FROM eclipse-temurin:21-jdk AS build

@@ -106,7 +106,8 @@ val installFrontend by tasks.registering(Exec::class) {
     inputs.file(frontendDir.file("package.json"))
     inputs.file(frontendDir.file("pnpm-lock.yaml")).optional(true)
     outputs.dir(frontendDir.dir("node_modules"))
-    commandLine(pnpm, "install", "--frozen-lockfile=false")
+    // Honor the committed pnpm-lock.yaml; fail (don't silently mutate it) on drift.
+    commandLine(pnpm, "install", "--frozen-lockfile")
 }
 
 val buildFrontend by tasks.registering(Exec::class) {
