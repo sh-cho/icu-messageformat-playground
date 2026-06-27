@@ -8,6 +8,14 @@ import {
   formatMessage,
 } from "./api";
 import { EXAMPLES } from "./examples";
+import {
+  type Theme,
+  applyTheme,
+  onSystemThemeChange,
+  persistTheme,
+  resolveInitialTheme,
+  storedTheme,
+} from "./theme";
 
 const FALLBACK_LOCALES: LocaleInfo[] = [
   { tag: "en-US", displayName: "English (US)" },
@@ -22,6 +30,7 @@ export default function App() {
   const [argsText, setArgsText] = useState(initial.args);
   const [locale, setLocale] = useState(initial.locale);
 
+  const [theme, setTheme] = useState<Theme>(resolveInitialTheme);
   const [locales, setLocales] = useState<LocaleInfo[]>(FALLBACK_LOCALES);
   const [output, setOutput] = useState<string | null>(null);
   const [error, setError] = useState<FormatError | null>(null);
@@ -33,6 +42,24 @@ export default function App() {
       if (list.length) setLocales(list);
     });
   }, []);
+
+  // Reflect the active theme onto <html> (an inline script in index.html sets
+  // the initial value pre-paint; this keeps it in sync afterwards).
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
+  // While the user hasn't made an explicit choice, follow the OS preference live.
+  useEffect(() => {
+    if (storedTheme() !== null) return;
+    return onSystemThemeChange(setTheme);
+  }, [theme]);
+
+  function toggleTheme() {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    persistTheme(next);
+    setTheme(next);
+  }
 
   // Parse the args JSON locally; surface parse errors without a round-trip.
   const parsedArgs = useMemo(() => {
@@ -99,6 +126,15 @@ export default function App() {
           <span className="sub">rendered by icu4j — same output as your JVM backend</span>
         </div>
         <div className="controls">
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+
           <div className="engine-toggle" role="group" aria-label="Engine">
             <button
               className={engine === "mf1" ? "active" : ""}

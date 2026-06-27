@@ -1,4 +1,22 @@
 :root {
+  /* Light theme (default). The active theme is selected via the
+     data-theme attribute on <html>; see theme.ts. */
+  --bg: #f5f7fa;
+  --panel: #ffffff;
+  --panel-2: #eef1f6;
+  --border: #dfe3ea;
+  --text: #1a1d24;
+  --muted: #67707f;
+  --accent: #2563eb;
+  --accent-2: #dbe4ff;
+  --error: #dc2626;
+  --ok: #15803d;
+  --selection: rgba(37, 99, 235, 0.18);
+  --active-line: rgba(0, 0, 0, 0.04);
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+:root[data-theme="dark"] {
   --bg: #0f1115;
   --panel: #171a21;
   --panel-2: #1d212a;
@@ -9,7 +27,8 @@
   --accent-2: #2b3a55;
   --error: #ff6b6b;
   --ok: #4ade80;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --selection: rgba(110, 168, 254, 0.28);
+  --active-line: rgba(255, 255, 255, 0.05);
 }
 
 * {
@@ -64,6 +83,25 @@ body {
   align-items: flex-end;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+.theme-toggle {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  width: 36px;
+  height: 34px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
 }
 
 .engine-toggle {

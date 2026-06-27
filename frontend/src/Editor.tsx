@@ -41,6 +41,26 @@ const errorField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
+// Theme driven entirely by CSS variables, so flipping data-theme on <html>
+// restyles the editor without rebuilding it.
+const cssVarTheme = EditorView.theme({
+  "&": { height: "100%", backgroundColor: "transparent", color: "var(--text)" },
+  ".cm-scroller": { fontFamily: "inherit" },
+  ".cm-content": { caretColor: "var(--accent)" },
+  ".cm-gutters": {
+    backgroundColor: "transparent",
+    color: "var(--muted)",
+    border: "none",
+  },
+  ".cm-activeLine": { backgroundColor: "var(--active-line)" },
+  ".cm-activeLineGutter": {
+    backgroundColor: "var(--active-line)",
+    color: "var(--text)",
+  },
+  "&.cm-focused .cm-cursor": { borderLeftColor: "var(--accent)" },
+  ".cm-content ::selection": { backgroundColor: "var(--selection)" },
+});
+
 interface EditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -66,6 +86,7 @@ export default function Editor({
       history(),
       keymap.of([...defaultKeymap, ...historyKeymap]),
       errorField,
+      cssVarTheme,
       EditorView.lineWrapping,
       EditorView.updateListener.of((u) => {
         if (u.docChanged) onChangeRef.current(u.state.doc.toString());
