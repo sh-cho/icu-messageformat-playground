@@ -10,6 +10,7 @@ import io.ktor.server.http.content.staticResources
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.serialization.KSerializer
@@ -118,6 +119,12 @@ fun Application.module() {
     val indexHtml = object {}.javaClass.classLoader.getResourceAsStream("static/index.html")?.readBytes()
 
     routing {
+        // Cheap liveness/readiness probe for orchestrators (k8s, load balancers,
+        // Docker). Plain text so it needs no serialization — safe in the native image
+        // and adds nothing to cold start. The slim runtime images have no shell/curl,
+        // so a Docker HEALTHCHECK can't curl this; point orchestrator probes here instead.
+        get("/api/health") { call.respondText("ok") }
+
         formatRoutes()
         // Hashed JS/CSS — plain file lookups, safe in both the jar and native image.
         staticResources("/assets", "static/assets")

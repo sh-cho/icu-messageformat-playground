@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref to save runner minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # mise.toml is the single source of truth for the JDK / Node / pnpm versions,
+      # so the same toolchain runs in CI as locally. `./gradlew test` pulls in the
+      # frontend build (processResources -> buildFrontend), hence Node + pnpm too.
+      - uses: jdx/mise-action@v2
+      - run: ./gradlew test --no-daemon --stacktrace
+
+  # Smoke-build the JVM image so a broken Dockerfile / AppCDS step fails a PR rather
+  # than a release. Native image build is too heavy for every PR — it runs on tags only.
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

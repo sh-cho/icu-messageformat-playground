@@ -18,6 +18,9 @@ RUN cd frontend && pnpm install --frozen-lockfile=false && pnpm run build
 FROM ghcr.io/graalvm/native-image-community:25 AS build
 # gradlew needs xargs (findutils), absent from this Oracle Linux base.
 RUN microdnf install -y findutils && microdnf clean all
+# .dockerignore strips .git, so the version is passed in (defaults to 1.0.0-dev).
+ARG VERSION=1.0.0-dev
+ENV VERSION=${VERSION}
 WORKDIR /src
 # Bring in the repo plus the already-built frontend, so we can skip the pnpm tasks.
 COPY --from=frontend /src /src
@@ -29,14 +32,26 @@ RUN ./gradlew --no-daemon buildFatJar -x buildFrontend -x installFrontend
 # can't see statically is recorded. Output auto-discovered under META-INF/native-image.
 RUN java -agentlib:native-image-agent=config-output-dir=src/main/resources/META-INF/native-image/generated \
     -Dheadless.warmup=true -jar build/libs/playground-all.jar
-# Compile to a native binary -> build/native/nativeCompile/playground
+# Compile to a native binary -> build/native/nativeCompile/playground. The build uses
+# -H:+StaticExecutableWithDynamicLibC (see build.gradle.kts) so the binary links zlib
+# etc. statically and depends only on glibc — letting the runtime image below carry no
+# extra packages.
 RUN ./gradlew --no-daemon nativeCompile -x buildFrontend -x installFrontend
 
-# --- 3. Runtime: just glibc + zlib for the dynamically-linked binary -------------
-FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends zlib1g \
-    && rm -rf /var/lib/apt/lists/*
+# --- 3. Runtime: distroless (glibc only, no shell/pkg manager, runs non-root) ----
+# The mostly-static binary needs just a glibc, which distroless/base provides. No apt
+# layer, no shell, and the :nonroot tag runs as uid 65532 out of the box.
+FROM gcr.io/distroless/base-debian12:nonroot
+ARG VERSION=1.0.0-dev
+ARG REVISION=unknown
+LABEL org.opencontainers.image.title="icu-playground" \
+      org.opencontainers.image.description="ICU MessageFormat playground (icu4j) — GraalVM native image" \
+      org.opencontainers.image.source="https://github.com/sh-cho/icu-messageformat-playground" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}"
 WORKDIR /app
 COPY --from=build /src/build/native/nativeCompile/playground /app/playground
 EXPOSE 8080
+# No Docker HEALTHCHECK (distroless has no shell/curl): probe GET /api/health instead.
 ENTRYPOINT ["/app/playground"]

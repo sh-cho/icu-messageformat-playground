@@ -11,7 +11,18 @@ plugins {
 }
 
 group = "com.icuplayground"
-version = "1.0.0"
+
+// Version resolution, in priority order:
+//   1. -Pversion=... or the VERSION env var (CI passes the git tag this way; the
+//      Docker builds forward it as a build-arg since .dockerignore strips .git).
+//   2. `git describe` when building from a checkout with tags.
+//   3. "1.0.0-dev" fallback (e.g. inside Docker with no .git, no VERSION arg).
+version = (System.getenv("VERSION")?.takeIf { it.isNotBlank() }?.removePrefix("v") ?: run {
+    runCatching {
+        providers.exec { commandLine("git", "describe", "--tags", "--always", "--dirty") }
+            .standardOutput.asText.get().trim().removePrefix("v")
+    }.getOrNull()?.takeIf { it.isNotBlank() }
+} ?: "1.0.0-dev")
 
 application {
     mainClass.set("com.icuplayground.ApplicationKt")
@@ -67,6 +78,12 @@ graalvmNative {
             mainClass.set("com.icuplayground.ApplicationKt")
             buildArgs.add("--no-fallback")
             buildArgs.add("-H:+ReportExceptionStackTraces")
+            // Statically link everything except glibc (zlib, libstdc++, …). The runtime
+            // binary then needs only a glibc, so it runs on a minimal distroless/base
+            // image with no extra packages — see Dockerfile.native. (Full --static would
+            // need a musl toolchain in the build image; this avoids that while still
+            // dropping the Debian runtime layer.)
+            buildArgs.add("-H:+StaticExecutableWithDynamicLibC")
         }
     }
     // Pull community-maintained reachability metadata (logback, etc.) automatically.
