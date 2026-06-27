@@ -26,6 +26,33 @@ data class FormatRequest(
 data class FormatResponse(
     val output: String? = null,
     val error: FormatError? = null,
+    /** Arguments detected in the template, with inferred types (for scaffolding). */
+    val detectedArgs: List<ArgInfo> = emptyList(),
+    /** Per-plural CLDR category coverage for this locale. */
+    val pluralChecks: List<PluralCheck> = emptyList(),
+)
+
+/** A template argument and the input type inferred from how it's used. */
+@Serializable
+data class ArgInfo(
+    val name: String,
+    /** "number" | "string" | "date" | "time" */
+    val type: String,
+)
+
+/**
+ * CLDR plural-category coverage for one plural/selectordinal argument. ICU does
+ * not require categories beyond `other`, but omitting e.g. `few` for Polish
+ * renders incorrectly — this surfaces what a translation is missing.
+ */
+@Serializable
+data class PluralCheck(
+    val argName: String,
+    /** "plural" | "selectordinal" */
+    val type: String,
+    val required: List<String>,
+    val provided: List<String>,
+    val missing: List<String>,
 )
 
 enum class ErrorType {
@@ -56,4 +83,5 @@ data class LocaleResult(
     val displayName: String,
     val output: String? = null,
     val error: FormatError? = null,
+    val pluralChecks: List<PluralCheck> = emptyList(),
 )

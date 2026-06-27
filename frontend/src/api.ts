@@ -8,9 +8,24 @@ export interface FormatError {
   offset: number | null;
 }
 
+export interface ArgInfo {
+  name: string;
+  type: "number" | "string" | "date" | "time";
+}
+
+export interface PluralCheck {
+  argName: string;
+  type: "plural" | "selectordinal";
+  required: string[];
+  provided: string[];
+  missing: string[];
+}
+
 export interface FormatResponse {
   output: string | null;
   error: FormatError | null;
+  detectedArgs: ArgInfo[];
+  pluralChecks: PluralCheck[];
 }
 
 export interface LocaleInfo {
@@ -30,6 +45,7 @@ export interface LocaleResult {
   displayName: string;
   output: string | null;
   error: FormatError | null;
+  pluralChecks: PluralCheck[];
 }
 
 export async function formatMessage(
@@ -46,6 +62,8 @@ export async function formatMessage(
     return {
       output: null,
       error: { type: "INTERNAL", message: `HTTP ${res.status}`, offset: null },
+      detectedArgs: [],
+      pluralChecks: [],
     };
   }
   return res.json();

@@ -17,6 +17,14 @@ export const EXAMPLES: Example[] = [
     args: '{\n  "count": 3\n}',
   },
   {
+    name: "Plural (Russian)",
+    engine: "mf1",
+    locale: "ru-RU",
+    template:
+      "{count, plural, one {# яблоко} few {# яблока} many {# яблок} other {# яблока}}",
+    args: '{\n  "count": 5\n}',
+  },
+  {
     name: "Select (gender)",
     engine: "mf1",
     locale: "ko-KR",

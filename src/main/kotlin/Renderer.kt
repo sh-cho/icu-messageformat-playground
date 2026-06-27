@@ -38,18 +38,26 @@ object Renderer {
     }
 
     fun render(req: FormatRequest): FormatResponse {
+        val uLocale = ULocale.forLanguageTag(req.locale)
+        // Static analysis is independent of rendering — attach it to every response.
+        val analysis = TemplateAnalyzer.analyze(req.template, uLocale, req.engine)
+
         val args: Map<String, Any?> = try {
             coerce(req.args)
         } catch (e: CoercionException) {
-            return FormatResponse(error = FormatError(e.type, e.message ?: "Argument coercion failed"))
+            return FormatResponse(
+                error = FormatError(e.type, e.message ?: "Argument coercion failed"),
+                detectedArgs = analysis.args,
+                pluralChecks = analysis.plurals,
+            )
         }
 
-        val locale = ULocale.forLanguageTag(req.locale).toLocale()
-
-        return when (req.engine) {
+        val locale = uLocale.toLocale()
+        val resp = when (req.engine) {
             Engine.MF1 -> renderMf1(req.template, locale, args)
             Engine.MF2 -> renderMf2(req.template, locale, args)
         }
+        return resp.copy(detectedArgs = analysis.args, pluralChecks = analysis.plurals)
     }
 
     private fun renderMf1(template: String, locale: java.util.Locale, args: Map<String, Any?>): FormatResponse {

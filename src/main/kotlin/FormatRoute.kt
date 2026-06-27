@@ -45,7 +45,7 @@ fun Route.formatRoutes() {
 
         val results = Locales.list.map { loc ->
             val r = Renderer.renderGuarded(req.copy(locale = loc.tag))
-            LocaleResult(loc.tag, loc.displayName, r.output, r.error)
+            LocaleResult(loc.tag, loc.displayName, r.output, r.error, r.pluralChecks)
         }
         call.respond(HttpStatusCode.OK, results)
     }

@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Editor from "./Editor";
 import CopyButton from "./CopyButton";
 import {
+  type ArgInfo,
   type Engine,
   type FormatError,
   type LocaleInfo,
   type LocaleResult,
+  type PluralCheck,
   fetchLocales,
   formatAllLocales,
   formatMessage,
@@ -25,6 +27,11 @@ const FALLBACK_LOCALES: LocaleInfo[] = [
   { tag: "ko-KR", displayName: "Korean (South Korea)" },
   { tag: "ja-JP", displayName: "Japanese (Japan)" },
 ];
+
+// Unique missing plural categories across a locale's checks.
+function pluralMissing(checks: PluralCheck[]): string[] {
+  return [...new Set(checks.flatMap((c) => c.missing))];
+}
 
 // Build a flag emoji from a locale tag's region subtag (e.g. en-US → 🇺🇸).
 function flagEmoji(tag: string): string {
@@ -50,6 +57,8 @@ export default function App() {
   const [pending, setPending] = useState(false);
   const [compareLocales, setCompareLocales] = useState(false);
   const [allResults, setAllResults] = useState<LocaleResult[]>([]);
+  const [detectedArgs, setDetectedArgs] = useState<ArgInfo[]>([]);
+  const [pluralChecks, setPluralChecks] = useState<PluralCheck[]>([]);
 
   useEffect(() => {
     fetchLocales().then((list) => {
@@ -110,6 +119,8 @@ export default function App() {
         .then((res) => {
           setOutput(res.output);
           setError(res.error);
+          setDetectedArgs(res.detectedArgs ?? []);
+          setPluralChecks(res.pluralChecks ?? []);
         })
         .catch((e) => {
           if (e.name !== "AbortError") {
@@ -139,6 +150,42 @@ export default function App() {
     setTemplate(ex.template);
     setArgsText(ex.args);
   }
+
+  function defaultForType(type: ArgInfo["type"]): unknown {
+    switch (type) {
+      case "number":
+        return 1;
+      case "date":
+      case "time":
+        return { "@type": "date", value: "2025-01-01T00:00:00Z" };
+      default:
+        return "";
+    }
+  }
+
+  // Insert any of `which` args not already present into the args JSON.
+  function addArgs(which: ArgInfo[]) {
+    let base: Record<string, unknown> = {};
+    try {
+      const v = JSON.parse(argsText.trim() || "{}");
+      if (v && typeof v === "object" && !Array.isArray(v)) base = v;
+    } catch {
+      // start from empty if the current JSON is unparseable
+    }
+    let changed = false;
+    for (const a of which) {
+      if (!(a.name in base)) {
+        base[a.name] = defaultForType(a.type);
+        changed = true;
+      }
+    }
+    if (changed) setArgsText(JSON.stringify(base, null, 2));
+  }
+
+  const presentKeys = parsedArgs.ok
+    ? new Set(Object.keys(parsedArgs.value))
+    : new Set<string>();
+  const missingArgs = detectedArgs.filter((a) => !presentKeys.has(a.name));
 
   return (
     <div className="app">
@@ -244,6 +291,36 @@ export default function App() {
           {argsParseError && (
             <div className="inline-error">Invalid JSON: {argsParseError}</div>
           )}
+          {detectedArgs.length > 0 && (
+            <div className="detected">
+              <span className="detected-label">Detected:</span>
+              <div className="chips">
+                {detectedArgs.map((a) => {
+                  const present = presentKeys.has(a.name);
+                  return (
+                    <button
+                      key={a.name}
+                      className={`arg-chip${present ? " present" : ""}`}
+                      onClick={() => addArgs([a])}
+                      disabled={present}
+                      title={present ? "Already in args" : `Add ${a.name} to args`}
+                    >
+                      {a.name}
+                      <span className="arg-type">{a.type}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                className="scaffold-btn"
+                onClick={() => addArgs(detectedArgs)}
+                disabled={missingArgs.length === 0}
+                title="Add all missing arguments"
+              >
+                Scaffold{missingArgs.length ? ` (${missingArgs.length})` : ""}
+              </button>
+            </div>
+          )}
         </section>
 
         <section className="pane output-pane pane-output">
@@ -281,19 +358,43 @@ export default function App() {
                   ) : (
                     <div className="locale-output">{r.output}</div>
                   )}
+                  {pluralMissing(r.pluralChecks).length > 0 && (
+                    <span
+                      className="miss-badge"
+                      title={`Plural categories missing for ${r.tag}`}
+                    >
+                      ⚠ {pluralMissing(r.pluralChecks).join(", ")}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
-          ) : error ? (
-            <div className={`error error-${error.type}`}>
-              <div className="error-type">{error.type}</div>
-              <div className="error-message">{error.message}</div>
-              {error.offset != null && (
-                <div className="error-offset">at offset {error.offset}</div>
-              )}
-            </div>
           ) : (
-            <pre className="output">{output ?? ""}</pre>
+            <>
+              {pluralChecks
+                .filter((c) => c.missing.length > 0)
+                .map((c) => (
+                  <div className="plural-warn" key={c.argName}>
+                    ⚠ {c.type} <code>{`{${c.argName}}`}</code> — {locale} is missing
+                    category: <b>{c.missing.join(", ")}</b>
+                    <span className="plural-req">
+                      {" "}
+                      (requires: {c.required.join(", ")})
+                    </span>
+                  </div>
+                ))}
+              {error ? (
+                <div className={`error error-${error.type}`}>
+                  <div className="error-type">{error.type}</div>
+                  <div className="error-message">{error.message}</div>
+                  {error.offset != null && (
+                    <div className="error-offset">at offset {error.offset}</div>
+                  )}
+                </div>
+              ) : (
+                <pre className="output">{output ?? ""}</pre>
+              )}
+            </>
           )}
         </section>
       </main>
