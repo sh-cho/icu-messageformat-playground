@@ -83,6 +83,17 @@ export async function formatAllLocales(
   return res.json();
 }
 
+export async function prettifyTemplate(req: FormatRequest): Promise<string> {
+  const res = await fetch("/api/prettify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) return req.template;
+  const data: { template: string } = await res.json();
+  return data.template;
+}
+
 export async function fetchLocales(): Promise<LocaleInfo[]> {
   try {
     const res = await fetch("/api/locales");

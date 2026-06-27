@@ -11,6 +11,7 @@ import {
   fetchLocales,
   formatAllLocales,
   formatMessage,
+  prettifyTemplate,
 } from "./api";
 import { EXAMPLES } from "./examples";
 import {
@@ -187,6 +188,26 @@ export default function App() {
     : new Set<string>();
   const missingArgs = detectedArgs.filter((a) => !presentKeys.has(a.name));
 
+  async function formatTemplate() {
+    const formatted = await prettifyTemplate({
+      engine,
+      template,
+      locale,
+      args: {},
+    });
+    if (formatted !== template) setTemplate(formatted);
+  }
+
+  // Prettify the args JSON in place; no-op if it isn't valid JSON.
+  function formatArgs() {
+    try {
+      const v = JSON.parse(argsText);
+      setArgsText(JSON.stringify(v, null, 2));
+    } catch {
+      // leave as-is; the inline JSON error already explains why
+    }
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -266,6 +287,18 @@ export default function App() {
               <span className="hint">
                 {engine === "mf1" ? "ICU MessageFormat (MF1)" : "MessageFormat 2.0 — Technical Preview"}
               </span>
+              <button
+                className="fmt-btn"
+                onClick={formatTemplate}
+                disabled={engine !== "mf1"}
+                title={
+                  engine === "mf1"
+                    ? "Format template (each variant on its own line)"
+                    : "Formatting is available for MF1 only"
+                }
+              >
+                Format
+              </button>
               <CopyButton value={template} />
             </div>
           </div>
@@ -284,6 +317,14 @@ export default function App() {
               <span className="hint">
                 JSON · dates: {'{ "@type": "date", "value": "…" }'}
               </span>
+              <button
+                className="fmt-btn"
+                onClick={formatArgs}
+                disabled={!parsedArgs.ok}
+                title="Format JSON"
+              >
+                Format
+              </button>
               <CopyButton value={argsText} />
             </div>
           </div>

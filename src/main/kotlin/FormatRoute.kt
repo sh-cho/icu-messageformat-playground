@@ -50,6 +50,13 @@ fun Route.formatRoutes() {
         call.respond(HttpStatusCode.OK, results)
     }
 
+    // Pretty-prints an MF1 template (each plural/select variant on its own line).
+    // Returns the original unchanged if formatting would alter its meaning.
+    post("/api/prettify") {
+        val req = call.receive<FormatRequest>()
+        call.respond(PrettifyResponse(IcuPrettyPrinter.prettify(req.template, req.engine)))
+    }
+
     get("/api/locales") {
         call.respond(Locales.list)
     }

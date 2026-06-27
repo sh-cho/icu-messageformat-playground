@@ -76,6 +76,11 @@ data class LocaleInfo(
     val displayName: String,
 )
 
+@Serializable
+data class PrettifyResponse(
+    val template: String,
+)
+
 /** One locale's render result, for the multi-locale comparison view. */
 @Serializable
 data class LocaleResult(
