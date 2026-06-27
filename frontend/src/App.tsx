@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Editor from "./Editor";
+import CopyButton from "./CopyButton";
 import {
   type Engine,
   type FormatError,
@@ -193,9 +194,12 @@ export default function App() {
         <section className="pane pane-template">
           <div className="pane-head">
             <h2>Template</h2>
-            <span className="hint">
-              {engine === "mf1" ? "ICU MessageFormat (MF1)" : "MessageFormat 2.0 — Technical Preview"}
-            </span>
+            <div className="pane-head-right">
+              <span className="hint">
+                {engine === "mf1" ? "ICU MessageFormat (MF1)" : "MessageFormat 2.0 — Technical Preview"}
+              </span>
+              <CopyButton value={template} />
+            </div>
           </div>
           <Editor
             value={template}
@@ -208,9 +212,12 @@ export default function App() {
         <section className="pane pane-args">
           <div className="pane-head">
             <h2>Arguments</h2>
-            <span className="hint">
-              JSON · dates: {'{ "@type": "date", "value": "…" }'}
-            </span>
+            <div className="pane-head-right">
+              <span className="hint">
+                JSON · dates: {'{ "@type": "date", "value": "…" }'}
+              </span>
+              <CopyButton value={argsText} />
+            </div>
           </div>
           <Editor value={argsText} onChange={setArgsText} language="json" />
           {argsParseError && (
@@ -221,7 +228,10 @@ export default function App() {
         <section className="pane output-pane pane-output">
           <div className="pane-head">
             <h2>Output</h2>
-            {pending && <span className="hint">rendering…</span>}
+            <div className="pane-head-right">
+              {pending && <span className="hint">rendering…</span>}
+              <CopyButton value={error ? error.message : output ?? ""} />
+            </div>
           </div>
           {error ? (
             <div className={`error error-${error.type}`}>

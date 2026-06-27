@@ -200,13 +200,50 @@ body {
 
 .pane-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 6px 10px 6px 14px;
+  min-height: 33px;
   background: var(--panel-2);
   border-bottom: 1px solid var(--border);
   border-top: 2px solid var(--pane-accent, transparent);
+}
+
+.pane-head-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-btn {
+  transition: color 0.12s, border-color 0.12s, opacity 0.12s;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  width: 26px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+}
+
+.copy-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.copy-btn.copied {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.copy-btn:disabled {
+  opacity: 0;
+  cursor: default;
 }
 
 .pane-head h2 {
