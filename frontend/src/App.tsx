@@ -5,7 +5,9 @@ import {
   type Engine,
   type FormatError,
   type LocaleInfo,
+  type LocaleResult,
   fetchLocales,
+  formatAllLocales,
   formatMessage,
 } from "./api";
 import { EXAMPLES } from "./examples";
@@ -37,6 +39,8 @@ export default function App() {
   const [error, setError] = useState<FormatError | null>(null);
   const [argsParseError, setArgsParseError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [compareLocales, setCompareLocales] = useState(false);
+  const [allResults, setAllResults] = useState<LocaleResult[]>([]);
 
   useEffect(() => {
     fetchLocales().then((list) => {
@@ -90,11 +94,10 @@ export default function App() {
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
+      const req = { engine, template, locale, args: parsedArgs.value };
       setPending(true);
-      formatMessage(
-        { engine, template, locale, args: parsedArgs.value },
-        ctrl.signal,
-      )
+
+      const single = formatMessage(req, ctrl.signal)
         .then((res) => {
           setOutput(res.output);
           setError(res.error);
@@ -103,12 +106,21 @@ export default function App() {
           if (e.name !== "AbortError") {
             setError({ type: "INTERNAL", message: String(e), offset: null });
           }
-        })
-        .finally(() => setPending(false));
+        });
+
+      const multi = compareLocales
+        ? formatAllLocales(req, ctrl.signal)
+            .then(setAllResults)
+            .catch((e) => {
+              if (e.name !== "AbortError") setAllResults([]);
+            })
+        : Promise.resolve();
+
+      Promise.all([single, multi]).finally(() => setPending(false));
     }, 300);
 
     return () => clearTimeout(handle);
-  }, [engine, template, locale, parsedArgs]);
+  }, [engine, template, locale, parsedArgs, compareLocales]);
 
   function loadExample(name: string) {
     const ex = EXAMPLES.find((e) => e.name === name);
@@ -230,10 +242,39 @@ export default function App() {
             <h2>Output</h2>
             <div className="pane-head-right">
               {pending && <span className="hint">rendering…</span>}
+              <label className="compare-toggle" title="Render across all locales">
+                <input
+                  type="checkbox"
+                  checked={compareLocales}
+                  onChange={(e) => setCompareLocales(e.target.checked)}
+                />
+                Compare locales
+              </label>
               <CopyButton value={error ? error.message : output ?? ""} />
             </div>
           </div>
-          {error ? (
+          {compareLocales ? (
+            <div className="locale-list">
+              {allResults.map((r) => (
+                <div
+                  key={r.tag}
+                  className={`locale-row${r.tag === locale ? " current" : ""}`}
+                >
+                  <div className="locale-meta">
+                    <span className="locale-tag">{r.tag}</span>
+                    <span className="locale-name">{r.displayName}</span>
+                  </div>
+                  {r.error ? (
+                    <div className="locale-output is-error">
+                      {r.error.type}: {r.error.message}
+                    </div>
+                  ) : (
+                    <div className="locale-output">{r.output}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : error ? (
             <div className={`error error-${error.type}`}>
               <div className="error-type">{error.type}</div>
               <div className="error-message">{error.message}</div>

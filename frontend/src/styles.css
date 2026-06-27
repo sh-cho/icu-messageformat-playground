@@ -293,6 +293,73 @@ body {
 }
 
 /* ---- output ---- */
+.compare-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.compare-toggle input {
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 0;
+}
+
+/* Multi-locale comparison list */
+.locale-list {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.locale-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.locale-row.current {
+  background: var(--active-line);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.locale-meta {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  width: 130px;
+}
+
+.locale-tag {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.locale-name {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.locale-output {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--ok);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.locale-output.is-error {
+  color: var(--error);
+  font-size: 12px;
+}
+
 .output {
   flex: 1;
   margin: 0;

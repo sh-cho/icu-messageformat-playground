@@ -48,3 +48,12 @@ data class LocaleInfo(
     val tag: String,
     val displayName: String,
 )
+
+/** One locale's render result, for the multi-locale comparison view. */
+@Serializable
+data class LocaleResult(
+    val tag: String,
+    val displayName: String,
+    val output: String? = null,
+    val error: FormatError? = null,
+)
