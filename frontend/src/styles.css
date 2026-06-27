@@ -329,6 +329,14 @@ body {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
+.locale-flag {
+  flex: none;
+  font-size: 18px;
+  line-height: 1.1;
+  width: 22px;
+  text-align: center;
+}
+
 .locale-meta {
   display: flex;
   flex-direction: column;

@@ -26,6 +26,15 @@ const FALLBACK_LOCALES: LocaleInfo[] = [
   { tag: "ja-JP", displayName: "Japanese (Japan)" },
 ];
 
+// Build a flag emoji from a locale tag's region subtag (e.g. en-US → 🇺🇸).
+function flagEmoji(tag: string): string {
+  const region = tag.split(/[-_]/).find((p) => /^[A-Z]{2}$/.test(p));
+  if (!region) return "🏳️";
+  return String.fromCodePoint(
+    ...[...region].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65),
+  );
+}
+
 export default function App() {
   const initial = EXAMPLES[0];
   const [engine, setEngine] = useState<Engine>(initial.engine);
@@ -174,7 +183,7 @@ export default function App() {
             <datalist id="locale-list">
               {locales.map((l) => (
                 <option key={l.tag} value={l.tag}>
-                  {l.displayName}
+                  {flagEmoji(l.tag)} {l.displayName}
                 </option>
               ))}
             </datalist>
@@ -260,6 +269,7 @@ export default function App() {
                   key={r.tag}
                   className={`locale-row${r.tag === locale ? " current" : ""}`}
                 >
+                  <span className="locale-flag">{flagEmoji(r.tag)}</span>
                   <div className="locale-meta">
                     <span className="locale-tag">{r.tag}</span>
                     <span className="locale-name">{r.displayName}</span>
