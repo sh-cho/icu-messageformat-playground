@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { EditorState, StateEffect, StateField } from "@codemirror/state";
 import {
+  type Command,
   Decoration,
   DecorationSet,
   EditorView,
@@ -11,9 +12,26 @@ import {
   defaultKeymap,
   history,
   historyKeymap,
-  indentWithTab,
+  indentLess,
+  indentMore,
 } from "@codemirror/commands";
+import { indentUnit } from "@codemirror/language";
 import { icu, highlighting, jsonLang } from "./cm-extensions";
+
+// Two-space indentation. Tab inserts spaces at the cursor; with a selection it
+// indents the block (also by two spaces, via indentUnit below).
+const INDENT = "  ";
+
+const insertSpaces: Command = (view) => {
+  if (view.state.selection.ranges.some((r) => !r.empty)) return indentMore(view);
+  view.dispatch(
+    view.state.update(view.state.replaceSelection(INDENT), {
+      scrollIntoView: true,
+      userEvent: "input",
+    }),
+  );
+  return true;
+};
 
 // --- error-offset highlight (M7) -------------------------------------------
 const setErrorOffset = StateEffect.define<number | null>();
@@ -90,9 +108,15 @@ export default function Editor({
     const extensions = [
       lineNumbers(),
       history(),
-      // indentWithTab first so Tab indents inside the editor instead of moving
-      // focus to the next pane.
-      keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
+      indentUnit.of(INDENT),
+      // Tab inserts two spaces at the cursor; indents the block when a range is
+      // selected. Shift-Tab dedents. Bound first so Tab is captured by the
+      // editor instead of moving focus to the next pane.
+      keymap.of([
+        { key: "Tab", run: insertSpaces, shift: indentLess },
+        ...defaultKeymap,
+        ...historyKeymap,
+      ]),
       errorField,
       cssVarTheme,
       highlighting,
