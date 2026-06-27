@@ -200,7 +200,8 @@ export default function App() {
           <Editor
             value={template}
             onChange={setTemplate}
-            errorOffset={engine === "mf1" || engine === "mf2" ? error?.offset ?? null : null}
+            language="icu"
+            errorOffset={error?.offset ?? null}
           />
         </section>
 

@@ -11,8 +11,14 @@
   --accent-2: #dbe4ff;
   --error: #dc2626;
   --ok: #15803d;
+  --preview: #b45309;
   --selection: rgba(37, 99, 235, 0.18);
   --active-line: rgba(0, 0, 0, 0.04);
+  --cm-keyword: #7c3aed;
+  --cm-variable: #2563eb;
+  --cm-string: #15803d;
+  --cm-number: #b45309;
+  --cm-bracket: #64748b;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -27,8 +33,14 @@
   --accent-2: #2b3a55;
   --error: #ff6b6b;
   --ok: #4ade80;
+  --preview: #ffcc66;
   --selection: rgba(110, 168, 254, 0.28);
   --active-line: rgba(255, 255, 255, 0.05);
+  --cm-keyword: #c792ea;
+  --cm-variable: #82aaff;
+  --cm-string: #4ade80;
+  --cm-number: #f7b955;
+  --cm-bracket: #8b93a3;
 }
 
 * {
@@ -130,7 +142,8 @@ body {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #ffcc66;
+  font-weight: 700;
+  color: var(--preview);
   margin-left: 4px;
   vertical-align: middle;
 }

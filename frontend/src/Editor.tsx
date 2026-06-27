@@ -7,8 +7,13 @@ import {
   keymap,
   lineNumbers,
 } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import { json } from "@codemirror/lang-json";
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+} from "@codemirror/commands";
+import { icu, highlighting, jsonLang } from "./cm-extensions";
 
 // --- error-offset highlight (M7) -------------------------------------------
 const setErrorOffset = StateEffect.define<number | null>();
@@ -48,10 +53,11 @@ const cssVarTheme = EditorView.theme({
   ".cm-scroller": { fontFamily: "inherit" },
   ".cm-content": { caretColor: "var(--accent)" },
   ".cm-gutters": {
-    backgroundColor: "transparent",
+    backgroundColor: "var(--panel)",
     color: "var(--muted)",
-    border: "none",
+    borderRight: "1px solid var(--border)",
   },
+  ".cm-lineNumbers .cm-gutterElement": { color: "var(--muted)" },
   ".cm-activeLine": { backgroundColor: "var(--active-line)" },
   ".cm-activeLineGutter": {
     backgroundColor: "var(--active-line)",
@@ -64,7 +70,7 @@ const cssVarTheme = EditorView.theme({
 interface EditorProps {
   value: string;
   onChange: (value: string) => void;
-  language?: "json" | "text";
+  language?: "json" | "icu" | "text";
   errorOffset?: number | null;
 }
 
@@ -84,15 +90,19 @@ export default function Editor({
     const extensions = [
       lineNumbers(),
       history(),
-      keymap.of([...defaultKeymap, ...historyKeymap]),
+      // indentWithTab first so Tab indents inside the editor instead of moving
+      // focus to the next pane.
+      keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
       errorField,
       cssVarTheme,
+      highlighting,
       EditorView.lineWrapping,
       EditorView.updateListener.of((u) => {
         if (u.docChanged) onChangeRef.current(u.state.doc.toString());
       }),
     ];
-    if (language === "json") extensions.push(json());
+    if (language === "json") extensions.push(jsonLang());
+    else if (language === "icu") extensions.push(icu());
 
     const view = new EditorView({
       state: EditorState.create({ doc: value, extensions }),
