@@ -1,3 +1,5 @@
+import { markServerReachable, markServerUnreachable } from "./connection";
+
 export type Engine = "mf1" | "mf2";
 
 export type ErrorType = "SYNTAX" | "MISSING_ARG" | "TYPE_MISMATCH" | "INTERNAL";
@@ -48,11 +50,28 @@ export interface LocaleResult {
   pluralChecks: PluralCheck[];
 }
 
+// fetch wrapper that doubles as a passive server-reachability probe. A
+// resolved response (any status) means the server answered → reachable. A
+// rejection that isn't an abort means we couldn't reach it → unreachable.
+async function apiFetch(
+  input: RequestInfo,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    const res = await fetch(input, init);
+    markServerReachable();
+    return res;
+  } catch (e) {
+    if ((e as Error).name !== "AbortError") markServerUnreachable();
+    throw e;
+  }
+}
+
 export async function formatMessage(
   req: FormatRequest,
   signal?: AbortSignal,
 ): Promise<FormatResponse> {
-  const res = await fetch("/api/format", {
+  const res = await apiFetch("/api/format", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -73,7 +92,7 @@ export async function formatAllLocales(
   req: FormatRequest,
   signal?: AbortSignal,
 ): Promise<LocaleResult[]> {
-  const res = await fetch("/api/format-all", {
+  const res = await apiFetch("/api/format-all", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -84,7 +103,7 @@ export async function formatAllLocales(
 }
 
 export async function prettifyTemplate(req: FormatRequest): Promise<string> {
-  const res = await fetch("/api/prettify", {
+  const res = await apiFetch("/api/prettify", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -96,7 +115,7 @@ export async function prettifyTemplate(req: FormatRequest): Promise<string> {
 
 export async function fetchLocales(): Promise<LocaleInfo[]> {
   try {
-    const res = await fetch("/api/locales");
+    const res = await apiFetch("/api/locales");
     if (!res.ok) return [];
     return res.json();
   } catch {

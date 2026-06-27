@@ -14,6 +14,7 @@ import {
   prettifyTemplate,
 } from "./api";
 import { EXAMPLES } from "./examples";
+import { useConnectionStatus } from "./useConnectionStatus";
 import {
   type Theme,
   applyTheme,
@@ -49,6 +50,9 @@ export default function App() {
   const [template, setTemplate] = useState(initial.template);
   const [argsText, setArgsText] = useState(initial.args);
   const [locale, setLocale] = useState(initial.locale);
+
+  const conn = useConnectionStatus();
+  const disconnected = !conn.online || conn.server === "offline";
 
   const [theme, setTheme] = useState<Theme>(resolveInitialTheme);
   const [locales, setLocales] = useState<LocaleInfo[]>(FALLBACK_LOCALES);
@@ -210,6 +214,14 @@ export default function App() {
 
   return (
     <div className="app">
+      {disconnected && (
+        <div className="conn-banner" role="alert">
+          <span className="conn-dot" aria-hidden="true" />
+          {!conn.online
+            ? "You're offline — check your network connection."
+            : "Can't reach the server. It'll reconnect automatically on your next change."}
+        </div>
+      )}
       <header className="topbar">
         <div className="brand">
           <h1>ICU MessageFormat Playground</h1>
