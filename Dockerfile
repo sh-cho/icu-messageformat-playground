@@ -1,14 +1,18 @@
-# Build the fat jar (frontend is built and bundled by the buildFrontend Gradle task).
-FROM node:26-bookworm AS build
-RUN corepack enable
-# JDK for the Gradle build
-RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jdk-headless \
-    && rm -rf /var/lib/apt/lists/*
+# --- 1. Frontend: build the React bundle into src/main/resources/static ---------
+FROM node:26-bookworm AS frontend
+# Node 26 no longer bundles corepack; install it to honor the pnpm pin.
+RUN npm install -g corepack && corepack enable
 WORKDIR /src
 COPY . .
-RUN ./gradlew --no-daemon buildFatJar
+RUN cd frontend && pnpm install --frozen-lockfile=false && pnpm run build
 
-# Runtime: JRE only.
+# --- 2. Fat jar (frontend tasks skipped — assets already built above) -----------
+FROM eclipse-temurin:21-jdk AS build
+WORKDIR /src
+COPY --from=frontend /src /src
+RUN ./gradlew --no-daemon buildFatJar -x buildFrontend -x installFrontend
+
+# --- 3. Runtime: JRE only -------------------------------------------------------
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /src/build/libs/playground-all.jar /app/app.jar

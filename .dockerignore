@@ -1,0 +1,11 @@
+# Build outputs and deps are regenerated inside the image — don't ship host copies.
+.git
+.gradle
+build
+frontend/node_modules
+frontend/dist
+src/main/resources/static
+src/main/resources/META-INF/native-image/generated
+*.jsa
+.idea
+.DS_Store

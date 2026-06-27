@@ -24,10 +24,25 @@ Only a JRE 21+ is required at runtime. The frontend is built and bundled automat
 
 ### Docker
 
+Two images are available — pick by what you're optimizing for.
+
+**JVM image** (`Dockerfile`) — the reliable default. Builds the fat jar, bakes an
+AppCDS archive, and runs with cold-start/small-container JVM flags. Sub-second cold
+start, ~100MB+ RSS.
+
 ```bash
-./gradlew buildFatJar
 docker build -t icu-playground .
 docker run -p 8080:8080 icu-playground
+```
+
+**GraalVM native image** (`Dockerfile.native`) — opt-in fast path. Compiles a native
+binary: ~50ms cold start, ~30–50MB RSS. The build is heavier (several minutes, ~6GB
+RAM) and depends on icu4j reflection metadata captured by the tracing agent during the
+build, so treat the JVM image as the source of truth and smoke-test this one.
+
+```bash
+docker build -f Dockerfile.native -t icu-playground:native .
+docker run -p 8080:8080 icu-playground:native
 ```
 
 ### Dev mode

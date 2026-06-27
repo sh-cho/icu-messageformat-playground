@@ -4,6 +4,10 @@ plugins {
     kotlin("jvm") version "2.2.20"
     kotlin("plugin.serialization") version "2.2.20"
     id("io.ktor.plugin") version "3.3.0"
+    // Native-image build (`./gradlew nativeCompile`). Applying it does NOT affect the
+    // normal JVM build — it only needs a GraalVM JDK when nativeCompile actually runs,
+    // so the regular fat-jar path keeps working on any stock JDK.
+    id("org.graalvm.buildtools.native") version "1.1.3"
 }
 
 group = "com.icuplayground"
@@ -47,6 +51,28 @@ kotlin {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// ---------------------------------------------------------------------------
+// GraalVM native-image. Build with `./gradlew nativeCompile` on a GraalVM JDK
+// (or via Dockerfile.native, which runs it in a GraalVM container). icu4j's CLDR
+// data + the bundled frontend live as classpath resources — see the committed
+// resource-config under src/main/resources/META-INF/native-image. Reflection
+// metadata is captured by the tracing agent during the native Docker build.
+// ---------------------------------------------------------------------------
+graalvmNative {
+    binaries {
+        named("main") {
+            imageName.set("playground")
+            mainClass.set("com.icuplayground.ApplicationKt")
+            buildArgs.add("--no-fallback")
+            buildArgs.add("-H:+ReportExceptionStackTraces")
+        }
+    }
+    // Pull community-maintained reachability metadata (logback, etc.) automatically.
+    metadataRepository {
+        enabled.set(true)
+    }
 }
 
 // ---------------------------------------------------------------------------

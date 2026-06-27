@@ -1,0 +1,9 @@
+{
+  "_comment": "Resources native-image cannot discover by static analysis. icu4j loads its bundled CLDR data (.res files) at runtime; Ktor serves the built frontend from the 'static' classpath dir. The tracing agent never exercises these (no HTTP, single locale), so they are pinned here by glob.",
+  "resources": {
+    "includes": [
+      { "pattern": "com/ibm/icu/impl/data/.*" },
+      { "pattern": "static/.*" }
+    ]
+  }
+}
