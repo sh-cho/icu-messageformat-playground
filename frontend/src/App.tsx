@@ -190,7 +190,7 @@ export default function App() {
       </header>
 
       <main className="grid">
-        <section className="pane">
+        <section className="pane pane-template">
           <div className="pane-head">
             <h2>Template</h2>
             <span className="hint">
@@ -205,7 +205,7 @@ export default function App() {
           />
         </section>
 
-        <section className="pane">
+        <section className="pane pane-args">
           <div className="pane-head">
             <h2>Arguments</h2>
             <span className="hint">
@@ -218,7 +218,7 @@ export default function App() {
           )}
         </section>
 
-        <section className="pane output-pane">
+        <section className="pane output-pane pane-output">
           <div className="pane-head">
             <h2>Output</h2>
             {pending && <span className="hint">rendering…</span>}

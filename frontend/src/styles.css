@@ -19,6 +19,9 @@
   --cm-string: #15803d;
   --cm-number: #b45309;
   --cm-bracket: #64748b;
+  --pane-template: #2563eb;
+  --pane-args: #7c3aed;
+  --pane-output: #15803d;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -41,6 +44,9 @@
   --cm-string: #4ade80;
   --cm-number: #f7b955;
   --cm-bracket: #8b93a3;
+  --pane-template: #6ea8fe;
+  --pane-args: #c792ea;
+  --pane-output: #4ade80;
 }
 
 * {
@@ -196,16 +202,30 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 8px;
   padding: 8px 14px;
+  background: var(--panel-2);
   border-bottom: 1px solid var(--border);
+  border-top: 2px solid var(--pane-accent, transparent);
 }
 
 .pane-head h2 {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--pane-accent, var(--muted));
   margin: 0;
+}
+
+/* Per-pane accent colors so the three areas are easy to tell apart. */
+.pane-template {
+  --pane-accent: var(--pane-template);
+}
+.pane-args {
+  --pane-accent: var(--pane-args);
+}
+.pane-output {
+  --pane-accent: var(--pane-output);
 }
 
 .pane-head .hint {
