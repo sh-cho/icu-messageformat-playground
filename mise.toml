@@ -1,2 +1,4 @@
 [tools]
 java = "25"
+node = "26"
+pnpm = "11"
