@@ -16,36 +16,19 @@ RUN cd frontend && pnpm install --frozen-lockfile=false && pnpm run build
 # reachability-metadata schema that the :21 image's GraalVM doesn't support.
 # Our bytecode targets JVM 21, which a 25 native-image toolchain compiles fine.
 FROM ghcr.io/graalvm/native-image-community:25 AS build
-# gradlew needs xargs (findutils); the agent run below needs curl. Neither ships
-# in this Oracle Linux base.
-RUN microdnf install -y findutils curl && microdnf clean all
+# gradlew needs xargs (findutils), absent from this Oracle Linux base.
+RUN microdnf install -y findutils && microdnf clean all
 WORKDIR /src
 # Bring in the repo plus the already-built frontend, so we can skip the pnpm tasks.
 COPY --from=frontend /src /src
 # Fat jar first (frontend tasks skipped — assets are already present).
 RUN ./gradlew --no-daemon buildFatJar -x buildFrontend -x installFrontend
-# Capture runtime reflection metadata with the tracing agent. We run the REAL server
-# and exercise every endpoint, because native-image can't see kotlinx.serialization's
-# generated serializers (resolved reflectively by Ktor) or icu4j's reflection unless a
-# real request walks those paths. Output is auto-discovered under META-INF/native-image.
-RUN set -eu; \
-    java -agentlib:native-image-agent=config-output-dir=src/main/resources/META-INF/native-image/generated \
-      -jar build/libs/playground-all.jar & \
-    SRV=$!; \
-    for i in $(seq 1 60); do curl -sf http://localhost:8080/api/locales >/dev/null 2>&1 && break; sleep 0.5; done; \
-    curl -sf http://localhost:8080/ >/dev/null; \
-    curl -sf http://localhost:8080/api/locales >/dev/null; \
-    for L in en-US ko-KR ar-SA pl-PL ru-RU ja-JP; do \
-      curl -sf -X POST http://localhost:8080/api/format -H 'Content-Type: application/json' \
-        -d "{\"engine\":\"mf1\",\"template\":\"{n, plural, one {# item} other {# items}} {d, date, long}\",\"locale\":\"$L\",\"args\":{\"n\":2,\"d\":0}}" >/dev/null; \
-    done; \
-    curl -sf -X POST http://localhost:8080/api/format -H 'Content-Type: application/json' \
-      -d '{"engine":"mf2","template":"Hello {$name}! {$n :number}","locale":"en-US","args":{"name":"x","n":3}}' >/dev/null; \
-    curl -sf -X POST http://localhost:8080/api/format-all -H 'Content-Type: application/json' \
-      -d '{"engine":"mf1","template":"{n, plural, one {#} other {#}}","args":{"n":1}}' >/dev/null; \
-    curl -sf -X POST http://localhost:8080/api/prettify -H 'Content-Type: application/json' \
-      -d '{"engine":"mf1","template":"{n, plural, one {#} other {#}}"}' >/dev/null; \
-    kill -TERM $SRV; wait $SRV || true
+# Capture runtime reflection metadata with the tracing agent. The headless pass
+# (-Dheadless.warmup, defined in Application.kt) drives icu4j and the reflective
+# serializer lookups in-process — no server, no HTTP — so the reflection native-image
+# can't see statically is recorded. Output auto-discovered under META-INF/native-image.
+RUN java -agentlib:native-image-agent=config-output-dir=src/main/resources/META-INF/native-image/generated \
+    -Dheadless.warmup=true -jar build/libs/playground-all.jar
 # Compile to a native binary -> build/native/nativeCompile/playground
 RUN ./gradlew --no-daemon nativeCompile -x buildFrontend -x installFrontend
 

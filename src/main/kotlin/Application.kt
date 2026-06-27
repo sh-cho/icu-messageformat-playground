@@ -12,32 +12,74 @@ import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.serializer
+import kotlin.reflect.KType
+import kotlin.reflect.typeOf
 
 fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
-    // Warm icu4j before serving — but only on the JVM. There it front-loads CLDR
-    // parsing, class loading and JIT (and the Docker build captures them into the
-    // AppCDS archive via -Dwarmup.exit). A native image has no JIT and no class
-    // loading, so the only thing left to warm is icu4j's lazy CLDR parsing — and for
-    // a scale-to-zero deploy that merely relocates the cost from request #1 to
-    // startup (same time-to-first-response), so we skip it for a leaner cold start.
-    // The property is "runtime" only inside a running native image; null on the JVM.
-    val nativeRuntime = System.getProperty("org.graalvm.nativeimage.imagecode") == "runtime"
-    if (!nativeRuntime) warmIcu()
-    // CDS training run (see Dockerfile): warm icu4j, then exit cleanly so the JVM
-    // dumps the AppCDS archive instead of starting a server that never returns.
-    if (System.getProperty("warmup.exit") == "true") return
+
+    // Build-time headless pass (no server, no sockets, no HTTP). The native build runs
+    // it under the tracing agent to capture reflection metadata; the JVM build runs it
+    // under -XX:ArchiveClassesAtExit to populate the AppCDS archive. Because "what to
+    // trace" lives here in type-safe Kotlin, neither Dockerfile has to spin up a server
+    // and curl hardcoded URLs to exercise the reflective paths.
+    if (System.getProperty("headless.warmup") == "true") {
+        headlessWarmup()
+        return
+    }
+
+    // No warm-up before serving: AppCDS already covers JVM class loading, and icu4j's
+    // remaining lazy CLDR parsing only relocates from request #1 to startup (same
+    // time-to-first-response on scale-to-zero). Warming a live instance is a deployment
+    // concern — e.g. a k8s startup/readiness probe hitting /api/format — not app logic.
     embeddedServer(CIO, port = port, host = "0.0.0.0", module = Application::module).start(wait = true)
 }
 
 /**
- * Touch both engines across the main format types (plural, number, date, select) so
- * icu4j's class loading + CLDR init + the reflective formatter lookups all happen at
- * boot, not on request #1. Doubles as coverage for the native-image tracing agent
- * (Dockerfile.native), which records the reflection these paths trigger.
+ * Headless build-time pass: drives the same reflection the running server would, but
+ * without binding a socket. Covers (1) icu4j's formatter reflection via [warmIcu] and
+ * (2) the kotlinx.serialization serializers Ktor resolves *reflectively* from each
+ * route's response type — the part native-image cannot discover by static analysis.
+ * Per-locale CLDR *data* is handled separately by the committed resource-config glob,
+ * so en-US here is enough (reflection is locale-independent). Used by both the native
+ * tracing agent and the JVM AppCDS training run — see the Dockerfiles.
+ */
+private fun headlessWarmup() {
+    warmIcu()
+
+    val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    fun trace(type: KType, value: Any?) {
+        // serializer(KType) is exactly the reflective lookup Ktor performs; the
+        // round-trip then forces the whole serializer graph (nested models, enums).
+        @Suppress("UNCHECKED_CAST")
+        val ser = serializer(type) as KSerializer<Any?>
+        json.decodeFromString(ser, json.encodeToString(ser, value))
+    }
+
+    val resp = FormatResponse(
+        output = "x",
+        error = FormatError(ErrorType.SYNTAX, "m", 0),
+        detectedArgs = listOf(ArgInfo("n", "number")),
+        pluralChecks = listOf(PluralCheck("n", "plural", listOf("other"), listOf("other"), emptyList())),
+    )
+    trace(typeOf<FormatRequest>(), FormatRequest(template = "x"))
+    trace(typeOf<FormatResponse>(), resp)
+    trace(typeOf<List<LocaleInfo>>(), Locales.list)
+    trace(typeOf<List<LocaleResult>>(), listOf(LocaleResult("en-US", "English", resp.output, resp.error, resp.pluralChecks)))
+    trace(typeOf<PrettifyResponse>(), PrettifyResponse("x"))
+}
+
+/**
+ * Exercises both engines across the main format types (plural, number, date, select)
+ * so icu4j's class loading, CLDR init and reflective formatter lookups are all
+ * triggered. Build-time only — invoked by [headlessWarmup] under the native tracing
+ * agent and the JVM AppCDS training run. It is intentionally NOT run before serving
+ * (see [main]).
  */
 private fun warmIcu() {
     fun warm(engine: Engine, t: String, args: kotlinx.serialization.json.JsonObject) =

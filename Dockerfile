@@ -17,11 +17,12 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /src/build/libs/playground-all.jar /app/app.jar
 
-# Train an AppCDS archive at build time. The app warms icu4j at boot (warmIcu()),
-# so a brief run + clean shutdown captures the JDK + Ktor + icu4j classes into a
-# memory-mappable archive. Each cold start then memory-maps the archive instead of
-# parsing/loading those classes from the jar again — a big chunk of JVM cold start.
-RUN java -XX:ArchiveClassesAtExit=/app/app.jsa -Dwarmup.exit=true -jar /app/app.jar || true
+# Train an AppCDS archive at build time. The headless pass (-Dheadless.warmup, defined
+# in Application.kt) loads icu4j + the serialization classes then exits cleanly, so the
+# JDK + Ktor + icu4j classes get captured into a memory-mappable archive. Each cold
+# start then memory-maps the archive instead of parsing/loading those classes from the
+# jar again — a big chunk of JVM cold start.
+RUN java -XX:ArchiveClassesAtExit=/app/app.jsa -Dheadless.warmup=true -jar /app/app.jar || true
 
 # Cold-start / small-container tuning:
 #  -XX:SharedArchiveFile  use the AppCDS archive built above
