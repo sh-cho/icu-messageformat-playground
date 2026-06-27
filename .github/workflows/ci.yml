@@ -14,14 +14,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       # mise.toml is the single source of truth for the JDK / Node / pnpm versions,
       # so the same toolchain runs in CI as locally. `./gradlew test` pulls in the
       # frontend build (processResources -> buildFrontend), hence Node + pnpm too.
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
       # Cache the Gradle dependency + build cache across runs (~/.gradle/caches and the
       # local build cache) so PRs don't re-fetch and re-run unchanged work every time.
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
       - run: ./gradlew test --no-daemon --stacktrace
 
   # Smoke-build the JVM image so a broken Dockerfile / AppCDS step fails a PR rather
@@ -29,9 +29,9 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+      - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
           file: Dockerfile
