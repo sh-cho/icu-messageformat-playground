@@ -7,7 +7,7 @@ COPY . .
 RUN cd frontend && pnpm install --frozen-lockfile && pnpm run build
 
 # --- 2. Fat jar (frontend tasks skipped — assets already built above) -----------
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:25-jdk AS build
 # .dockerignore strips .git, so the version is passed in (defaults to 1.0.0-dev).
 ARG VERSION=1.0.0-dev
 ENV VERSION=${VERSION}
@@ -18,7 +18,7 @@ RUN ./gradlew --no-daemon buildFatJar -x buildFrontend -x installFrontend
 # --- 3. Runtime: JRE only -------------------------------------------------------
 # Stay on temurin (not distroless): the AppCDS archive is tied to its exact JDK build,
 # so a different OpenJDK would silently reject it.
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=build /src/build/libs/playground-all.jar /app/app.jar
 
