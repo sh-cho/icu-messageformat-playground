@@ -62,6 +62,9 @@ jobs:
           format: sarif
           output: trivy-jvm.sarif
           severity: CRITICAL,HIGH
+          # sarif format ignores `severity` for the gate unless this is true — without it,
+          # exit-code:1 fires on ANY severity (e.g. MEDIUM logback), not just CRITICAL/HIGH.
+          limit-severities-for-sarif: true
           ignore-unfixed: true
           exit-code: '1'
       # Trivy writes the SARIF before exiting non-zero — upload even on failure.
@@ -121,6 +124,7 @@ jobs:
           format: sarif
           output: trivy-native.sarif
           severity: CRITICAL,HIGH
+          limit-severities-for-sarif: true # gate on CRITICAL/HIGH only (see JVM scan note)
           ignore-unfixed: true
           exit-code: '1'
       - name: Upload Trivy results (native)
