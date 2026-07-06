@@ -12,13 +12,13 @@ plugins {
 group = "com.joebrothers.icuplayground"
 
 // Version: VERSION env / -Pversion (CI passes the git tag; Docker forwards it as a
-// build-arg since .dockerignore strips .git) -> `git describe` -> "1.0.0-dev" fallback.
+// build-arg since .dockerignore strips .git) -> `git describe` -> "0.1.0-dev" fallback.
 version = (System.getenv("VERSION")?.takeIf { it.isNotBlank() }?.removePrefix("v") ?: run {
     runCatching {
         providers.exec { commandLine("git", "describe", "--tags", "--always", "--dirty") }
             .standardOutput.asText.get().trim().removePrefix("v")
     }.getOrNull()?.takeIf { it.isNotBlank() }
-} ?: "1.0.0-dev")
+} ?: "0.1.0-dev")
 
 application {
     mainClass.set("com.joebrothers.icuplayground.ApplicationKt")
