@@ -62,6 +62,7 @@ private fun headlessWarmup() {
     trace(typeOf<List<LocaleInfo>>(), Locales.list)
     trace(typeOf<List<LocaleResult>>(), listOf(LocaleResult("en-US", "English", resp.output, resp.error, resp.pluralChecks)))
     trace(typeOf<PrettifyResponse>(), PrettifyResponse("x"))
+    trace(typeOf<MetaResponse>(), MetaResponse("x", "x", "x", listOf(EngineInfo("mf1", "x")), 0, "x", "x", "x", "JVM", "x"))
 }
 
 /** Build-time only: exercises both engines to trigger icu4j class loading and reflective lookups. */
@@ -103,6 +104,7 @@ fun Application.module() {
         get("/api/health") { call.respondText("ok") }
 
         formatRoutes()
+        metaRoutes()
         staticResources("/assets", "static/assets")
         // SPA shell for the root and any non-API path (null in pure backend dev runs).
         if (indexHtml != null) {

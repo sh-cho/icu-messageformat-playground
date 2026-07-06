@@ -78,6 +78,28 @@ data class PrettifyResponse(
 )
 
 @Serializable
+data class EngineInfo(
+    val id: String,
+    val name: String,
+    val preview: Boolean = false,
+)
+
+/** Static + runtime facts about the app, surfaced in the UI's info modal. */
+@Serializable
+data class MetaResponse(
+    val icu4jVersion: String,
+    val unicodeVersion: String,
+    val cldrVersion: String,
+    val engines: List<EngineInfo>,
+    val localeCount: Int,
+    val javaVersion: String,
+    val javaVm: String,
+    val kotlinVersion: String,
+    val runtime: String,
+    val repoUrl: String,
+)
+
+@Serializable
 data class LocaleResult(
     val tag: String,
     val displayName: String,

@@ -121,3 +121,32 @@ export async function fetchLocales(): Promise<LocaleInfo[]> {
     return [];
   }
 }
+
+export interface EngineInfo {
+  id: string;
+  name: string;
+  preview: boolean;
+}
+
+export interface Meta {
+  icu4jVersion: string;
+  unicodeVersion: string;
+  cldrVersion: string;
+  engines: EngineInfo[];
+  localeCount: number;
+  javaVersion: string;
+  javaVm: string;
+  kotlinVersion: string;
+  runtime: string;
+  repoUrl: string;
+}
+
+export async function fetchMeta(): Promise<Meta | null> {
+  try {
+    const res = await apiFetch("/api/meta");
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
