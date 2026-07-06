@@ -42,7 +42,7 @@ jobs:
 
       # Build amd64 + load into the daemon so Trivy scans BEFORE publish. load can't carry
       # a multi-arch image; OS/jar CVEs are arch-independent so amd64 covers the arm64 push.
-      - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: Dockerfile
@@ -73,7 +73,7 @@ jobs:
           category: jvm-image
 
       # Gate passed -> push multi-arch (amd64 cache-hit, only arm64 built fresh).
-      - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: Dockerfile
@@ -102,7 +102,7 @@ jobs:
             type=raw,value=latest
 
       # Build + load for scanning; gha cache makes the push below reuse the nativeCompile layer.
-      - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: Dockerfile.native
@@ -131,7 +131,7 @@ jobs:
           category: native-image
 
       # Gate passed -> push (amd64, cache hit from the build above).
-      - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: Dockerfile.native
