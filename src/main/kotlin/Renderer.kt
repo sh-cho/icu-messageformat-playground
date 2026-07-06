@@ -1,4 +1,4 @@
-package com.icuplayground
+package com.joebrothers.icuplayground
 
 import com.ibm.icu.message2.MessageFormatter
 import com.ibm.icu.text.MessageFormat

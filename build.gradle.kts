@@ -9,7 +9,7 @@ plugins {
     id("org.graalvm.buildtools.native") version "1.1.3"
 }
 
-group = "com.icuplayground"
+group = "com.joebrothers.icuplayground"
 
 // Version: VERSION env / -Pversion (CI passes the git tag; Docker forwards it as a
 // build-arg since .dockerignore strips .git) -> `git describe` -> "1.0.0-dev" fallback.
@@ -21,7 +21,7 @@ version = (System.getenv("VERSION")?.takeIf { it.isNotBlank() }?.removePrefix("v
 } ?: "1.0.0-dev")
 
 application {
-    mainClass.set("com.icuplayground.ApplicationKt")
+    mainClass.set("com.joebrothers.icuplayground.ApplicationKt")
 }
 
 repositories {
@@ -79,7 +79,7 @@ graalvmNative {
     binaries {
         named("main") {
             imageName.set("playground")
-            mainClass.set("com.icuplayground.ApplicationKt")
+            mainClass.set("com.joebrothers.icuplayground.ApplicationKt")
             buildArgs.add("--no-fallback")
             buildArgs.add("-H:+ReportExceptionStackTraces")
             // Link everything but glibc statically (zlib, libstdc++, …) so the binary runs

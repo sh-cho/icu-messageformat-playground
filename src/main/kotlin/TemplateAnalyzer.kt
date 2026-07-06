@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION") // MessagePatternUtil is marked ICU-internal but is the cleanest AST.
 
-package com.icuplayground
+package com.joebrothers.icuplayground
 
 import com.ibm.icu.text.MessagePattern.ArgType
 import com.ibm.icu.text.MessagePatternUtil

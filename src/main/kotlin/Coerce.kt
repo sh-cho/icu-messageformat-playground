@@ -1,4 +1,4 @@
-package com.icuplayground
+package com.joebrothers.icuplayground
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement

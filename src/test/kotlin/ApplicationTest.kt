@@ -1,4 +1,4 @@
-package com.icuplayground
+package com.joebrothers.icuplayground
 
 import io.ktor.client.request.get
 import io.ktor.client.request.post

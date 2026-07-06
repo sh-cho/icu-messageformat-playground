@@ -1,4 +1,4 @@
-package com.icuplayground
+package com.joebrothers.icuplayground
 
 import com.ibm.icu.lang.UCharacter
 import com.ibm.icu.util.LocaleData

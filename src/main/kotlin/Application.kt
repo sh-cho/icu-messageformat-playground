@@ -1,4 +1,4 @@
-package com.icuplayground
+package com.joebrothers.icuplayground
 
 import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
