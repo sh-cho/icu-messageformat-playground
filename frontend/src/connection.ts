@@ -1,8 +1,6 @@
-// Tracks whether the backend is reachable, derived passively from the
-// outcome of the requests the app already makes — no polling. A request that
-// resolves marks the server reachable; a request that fails to connect (the
-// fetch promise rejects with something other than an abort) marks it
-// unreachable. The status flips back to reachable on the next successful call.
+// Tracks backend reachability passively from the requests the app already
+// makes — no polling. A resolved request marks reachable; a non-abort
+// connection failure marks unreachable; it flips back on the next success.
 
 export type ServerStatus = "online" | "offline";
 
@@ -41,9 +39,8 @@ export function subscribeServerStatus(fn: (s: ServerStatus) => void): () => void
 
 let probing = false;
 
-// One-shot reachability check. Not polling — call it on a discrete event (e.g.
-// the browser regaining network) to re-verify the server without waiting for
-// the user's next action. Concurrent calls collapse into one in-flight probe.
+// One-shot reachability check for a discrete event (e.g. regaining network).
+// Concurrent calls collapse into one in-flight probe.
 export async function probeServer(): Promise<void> {
   if (probing) return;
   probing = true;

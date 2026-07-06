@@ -30,7 +30,7 @@ jobs:
       - id: img
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      # --- JVM image: multi-arch (amd64 + arm64) ---------------------------------
+      # --- JVM image: build (amd64) -> scan -> push (multi-arch) -----------------
       - id: meta-jvm
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
@@ -39,6 +39,40 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
+
+      # Build amd64 + load into the daemon so Trivy scans BEFORE publish. load can't carry
+      # a multi-arch image; OS/jar CVEs are arch-independent so amd64 covers the arm64 push.
+      - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          tags: scan-target:jvm
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            REVISION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Pre-publish gate: fail on fixable CRITICAL/HIGH so a vulnerable image is never pushed.
+      - name: Trivy scan (JVM image)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: scan-target:jvm
+          format: sarif
+          output: trivy-jvm.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+      # Trivy writes the SARIF before exiting non-zero — upload even on failure.
+      - name: Upload Trivy results (JVM)
+        if: always()
+        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        with:
+          sarif_file: trivy-jvm.sarif
+          category: jvm-image
+
+      # Gate passed -> push multi-arch (amd64 cache-hit, only arm64 built fresh).
       - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
@@ -55,9 +89,8 @@ jobs:
           sbom: true
           provenance: mode=max
 
-      # --- Native image: amd64 only ----------------------------------------------
-      # GraalVM native-image under QEMU emulation is impractically slow / OOM-prone,
-      # so arm64 is intentionally skipped. Tagged with a `-native` suffix.
+      # --- Native image: amd64 only; build -> scan -> push -----------------------
+      # Native under QEMU is impractically slow / OOM-prone, so arm64 is skipped; `-native` suffix.
       - id: meta-native
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
@@ -67,6 +100,37 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=raw,value=latest
+
+      # Build + load for scanning; gha cache makes the push below reuse the nativeCompile layer.
+      - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: .
+          file: Dockerfile.native
+          load: true
+          tags: scan-target:native
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            REVISION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy scan (native image)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: scan-target:native
+          format: sarif
+          output: trivy-native.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Upload Trivy results (native)
+        if: always()
+        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        with:
+          sarif_file: trivy-native.sarif
+          category: native-image
+
+      # Gate passed -> push (amd64, cache hit from the build above).
       - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
@@ -78,19 +142,7 @@ jobs:
           build-args: |
             VERSION=${{ github.ref_name }}
             REVISION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           sbom: true
           provenance: mode=max
-
-      # --- Supply-chain scan of the published JVM image --------------------------
-      - name: Trivy scan (JVM image)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ${{ steps.img.outputs.name }}:${{ steps.meta-jvm.outputs.version }}
-          format: sarif
-          output: trivy.sarif
-          severity: CRITICAL,HIGH
-          exit-code: '0'   # report findings; don't fail an already-published release
-      - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
-        with:
-          sarif_file: trivy.sarif

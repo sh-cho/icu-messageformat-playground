@@ -7,9 +7,9 @@ import {
 } from "./connection";
 
 export interface ConnectionState {
-  // The browser's own network status (navigator.onLine + online/offline events).
+  // Browser network status (navigator.onLine + online/offline events).
   online: boolean;
-  // Last known backend reachability, inferred from real requests (see connection.ts).
+  // Backend reachability, inferred from real requests (see connection.ts).
   server: ServerStatus;
 }
 
@@ -22,8 +22,7 @@ export function useConnectionStatus(): ConnectionState {
   useEffect(() => {
     const goOnline = () => {
       setOnline(true);
-      // Network is back — re-verify the server once instead of waiting for the
-      // user's next action.
+      // Network is back — re-verify the server once rather than wait for the next action.
       void probeServer();
     };
     const goOffline = () => setOnline(false);

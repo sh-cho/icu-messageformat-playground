@@ -16,7 +16,6 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.Date
 
-/** Thrown when an argument value cannot be mapped to a Java type icu4j accepts. */
 class CoercionException(val type: ErrorType, message: String) : Exception(message)
 
 /**
@@ -25,7 +24,7 @@ class CoercionException(val type: ErrorType, message: String) : Exception(messag
  * JSON has no date type, so dates use an explicit tagging convention:
  *   { "exp": { "@type": "date", "value": "2025-03-27T00:00:00Z" } }
  *
- * Integer vs. floating-point distinction is preserved because it affects `plural` selection.
+ * The integer vs. floating-point distinction is preserved because it affects `plural` selection.
  */
 fun coerce(args: JsonObject): Map<String, Any?> =
     args.mapValues { (key, value) -> coerceValue(key, value) }
@@ -48,7 +47,7 @@ private fun coercePrimitive(el: JsonPrimitive): Any {
 private fun coerceTagged(key: String, obj: JsonObject): Any? {
     val typeEl = obj["@type"]
     if (typeEl == null) {
-        // Not a tagged value — treat as a nested map (rare for ICU args).
+        // No @type: treat as a nested map.
         return obj.mapValues { (k, v) -> coerceValue(k, v) }
     }
     val type = (typeEl as? JsonPrimitive)?.content

@@ -11,20 +11,18 @@ import java.util.concurrent.TimeoutException
 
 /**
  * Renders an ICU MessageFormat template with icu4j (MF1 = text.MessageFormat,
- * MF2 = message2.MessageFormatter). All failures are mapped to a [FormatError];
- * the route returns HTTP 200 with that body, never a 4xx — in a playground an
- * error is a normal result the UI displays.
+ * MF2 = message2.MessageFormatter). All failures are mapped to a [FormatError].
  */
 object Renderer {
 
-    /** Render timeout (§11) — guards against pathologically deep/expensive patterns. */
+    // Guards against pathologically deep/expensive patterns.
     private const val TIMEOUT_MS = 2000L
 
     private val executor = Executors.newCachedThreadPool { r ->
         Thread(r, "icu-render").apply { isDaemon = true }
     }
 
-    /** Production entry point: runs [render] under a timeout on a worker thread. */
+    /** Runs [render] under a timeout on a worker thread. */
     fun renderGuarded(req: FormatRequest): FormatResponse {
         val future = executor.submit<FormatResponse> { render(req) }
         return try {
@@ -39,7 +37,7 @@ object Renderer {
 
     fun render(req: FormatRequest): FormatResponse {
         val uLocale = ULocale.forLanguageTag(req.locale)
-        // Static analysis is independent of rendering — attach it to every response.
+        // Independent of rendering — attached to every response, error or not.
         val analysis = TemplateAnalyzer.analyze(req.template, uLocale, req.engine)
 
         val args: Map<String, Any?> = try {
@@ -68,7 +66,7 @@ object Renderer {
         }
 
         // MF1 silently renders an unresolved placeholder as literal "{name}" instead of
-        // throwing, so detect missing args up front (§6: null/absent => MISSING_ARG).
+        // throwing, so detect missing args up front.
         val missing = formatter.argumentNames.filter { it !in args.keys || args[it] == null }
         if (missing.isNotEmpty()) {
             return FormatResponse(
@@ -107,7 +105,7 @@ object Renderer {
         }
     }
 
-    /** Distinguish a missing argument from a type mismatch using the exception text. */
+    // Distinguishes a missing argument from a type mismatch by the exception text.
     private fun classifyRuntime(e: IllegalArgumentException): FormatError {
         val msg = e.message ?: e.toString()
         val lower = msg.lowercase()
@@ -123,7 +121,7 @@ object Renderer {
 
     private fun syntaxMessage(e: Throwable): String = e.message ?: e.toString()
 
-    /** Best-effort offset extraction: ParseException, or any cause exposing getOffset()/getErrorOffset(). */
+    // Best-effort: ParseException, or any cause exposing getOffset()/getErrorOffset().
     private fun extractOffset(t: Throwable?): Int? {
         var cur: Throwable? = t
         val seen = HashSet<Throwable>()
@@ -142,7 +140,7 @@ object Renderer {
                 val v = m.invoke(t)
                 if (v is Int && v >= 0) return v
             } catch (_: Exception) {
-                // method not present on this exception type — try the next
+                // method not present on this exception type
             }
         }
         return null

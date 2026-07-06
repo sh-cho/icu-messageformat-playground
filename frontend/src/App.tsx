@@ -30,12 +30,11 @@ const FALLBACK_LOCALES: LocaleInfo[] = [
   { tag: "ja-JP", displayName: "Japanese (Japan)" },
 ];
 
-// Unique missing plural categories across a locale's checks.
 function pluralMissing(checks: PluralCheck[]): string[] {
   return [...new Set(checks.flatMap((c) => c.missing))];
 }
 
-// Build a flag emoji from a locale tag's region subtag (e.g. en-US → 🇺🇸).
+// Flag emoji from a locale tag's region subtag (e.g. en-US → 🇺🇸).
 function flagEmoji(tag: string): string {
   const region = tag.split(/[-_]/).find((p) => /^[A-Z]{2}$/.test(p));
   if (!region) return "🏳️";
@@ -71,8 +70,7 @@ export default function App() {
     });
   }, []);
 
-  // Reflect the active theme onto <html> (an inline script in index.html sets
-  // the initial value pre-paint; this keeps it in sync afterwards).
+  // index.html sets the initial theme pre-paint; this keeps it in sync after.
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
@@ -89,7 +87,7 @@ export default function App() {
     setTheme(next);
   }
 
-  // Parse the args JSON locally; surface parse errors without a round-trip.
+  // Parse locally so JSON errors surface without a round-trip.
   const parsedArgs = useMemo(() => {
     const text = argsText.trim();
     if (text === "") return { ok: true as const, value: {} };
@@ -168,7 +166,6 @@ export default function App() {
     }
   }
 
-  // Insert any of `which` args not already present into the args JSON.
   function addArgs(which: ArgInfo[]) {
     let base: Record<string, unknown> = {};
     try {
@@ -202,7 +199,6 @@ export default function App() {
     if (formatted !== template) setTemplate(formatted);
   }
 
-  // Prettify the args JSON in place; no-op if it isn't valid JSON.
   function formatArgs() {
     try {
       const v = JSON.parse(argsText);

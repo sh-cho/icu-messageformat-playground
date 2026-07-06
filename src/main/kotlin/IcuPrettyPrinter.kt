@@ -13,11 +13,11 @@ import com.ibm.icu.text.MessagePatternUtil.TextNode
  * Pretty-prints an MF1 ICU MessageFormat template by putting each plural/select
  * variant on its own indented line.
  *
- * Whitespace *inside* a message is significant (it's literal output), so we only
- * add whitespace at structural positions (between variants, before the closing
- * brace) — never inside message text. As a safety net the result is re-parsed and
- * its canonical (minified) form compared to the original's; if they differ for any
- * reason, the original is returned unchanged. So formatting can never alter output.
+ * Whitespace inside a message is significant (literal output), so we only add it at
+ * structural positions (between variants, before the closing brace), never inside text.
+ * As a safety net the result is re-parsed and its canonical form compared to the
+ * original's; on any difference the original is returned unchanged, so formatting can
+ * never alter output.
  */
 object IcuPrettyPrinter {
 

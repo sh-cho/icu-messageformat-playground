@@ -7,10 +7,8 @@ import {
 } from "@codemirror/language";
 import { tags as t } from "@lezer/highlight";
 
-// --- ICU MessageFormat (MF1 + MF2) -----------------------------------------
-// There is no Lezer grammar for ICU MessageFormat, so we use a lightweight
-// StreamLanguage tokenizer. It covers both MF1 ({arg, plural, ...}, #, quoted
-// literals) and MF2 (.match/.input/.local, $vars, :functions).
+// No Lezer grammar exists for ICU MessageFormat, so use a lightweight
+// StreamLanguage tokenizer covering both MF1 and MF2.
 const ICU_KEYWORDS =
   /^(plural|selectordinal|select|number|date|time|spellout|ordinal|duration|choice|offset)\b/;
 
@@ -38,8 +36,7 @@ export function jsonLang(): LanguageSupport {
   return json();
 }
 
-// Highlight colors are CSS variables, so they follow the active theme
-// (light/dark) without rebuilding the editor.
+// Highlight colors are CSS variables, so they follow the active theme.
 const v = (name: string) => `var(--${name})`;
 
 const highlightStyle = HighlightStyle.define([

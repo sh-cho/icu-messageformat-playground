@@ -50,9 +50,8 @@ export interface LocaleResult {
   pluralChecks: PluralCheck[];
 }
 
-// fetch wrapper that doubles as a passive server-reachability probe. A
-// resolved response (any status) means the server answered → reachable. A
-// rejection that isn't an abort means we couldn't reach it → unreachable.
+// fetch wrapper that doubles as a passive reachability probe: any resolved
+// response means reachable; a non-abort rejection means unreachable.
 async function apiFetch(
   input: RequestInfo,
   init?: RequestInit,

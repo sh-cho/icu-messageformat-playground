@@ -1,6 +1,5 @@
 :root {
-  /* Light theme (default). The active theme is selected via the
-     data-theme attribute on <html>; see theme.ts. */
+  /* Light theme (default); dark is selected via data-theme on <html>. */
   --bg: #f5f7fa;
   --panel: #ffffff;
   --panel-2: #eef1f6;
@@ -73,7 +72,6 @@ body {
   height: 100vh;
 }
 
-/* ---- top bar ---- */
 .topbar {
   display: flex;
   align-items: center;
@@ -173,7 +171,6 @@ body {
   min-width: 150px;
 }
 
-/* ---- grid ---- */
 .grid {
   flex: 1;
   display: grid;
@@ -316,7 +313,6 @@ body {
   background: rgba(255, 107, 107, 0.12);
 }
 
-/* ---- output ---- */
 .compare-toggle {
   display: inline-flex;
   align-items: center;
@@ -333,7 +329,6 @@ body {
   margin: 0;
 }
 
-/* Multi-locale comparison list */
 .locale-list {
   flex: 1;
   overflow: auto;
@@ -443,7 +438,6 @@ body {
   border-top: 1px solid var(--border);
 }
 
-/* Detected arguments + scaffold (Arguments pane footer) */
 .detected {
   display: flex;
   align-items: center;
@@ -511,7 +505,6 @@ body {
   cursor: default;
 }
 
-/* Plural category coverage warnings */
 .plural-warn {
   margin: 12px 14px 0;
   padding: 8px 12px;

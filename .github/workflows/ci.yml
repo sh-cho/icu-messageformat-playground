@@ -15,17 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      # mise.toml is the single source of truth for the JDK / Node / pnpm versions,
-      # so the same toolchain runs in CI as locally. `./gradlew test` pulls in the
-      # frontend build (processResources -> buildFrontend), hence Node + pnpm too.
+      # mise.toml pins the JDK/Node/pnpm, so CI and local share a toolchain. `./gradlew
+      # test` builds the frontend too (processResources -> buildFrontend).
       - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
-      # Cache the Gradle dependency + build cache across runs (~/.gradle/caches and the
-      # local build cache) so PRs don't re-fetch and re-run unchanged work every time.
+      # Cache ~/.gradle + the build cache across runs so PRs skip re-fetch/re-run.
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
       - run: ./gradlew test --no-daemon --stacktrace
 
-  # Smoke-build the JVM image so a broken Dockerfile / AppCDS step fails a PR rather
-  # than a release. Native image build is too heavy for every PR — it runs on tags only.
+  # Smoke-build the JVM image so a broken Dockerfile / AppCDS step fails the PR. Native
+  # build is too heavy per-PR — tags only.
   docker-build:
     runs-on: ubuntu-latest
     steps:
@@ -38,3 +36,19 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Shift-left source scan at PR time: dependency CVEs (pnpm-lock + gradle.lockfile),
+  # secrets, Dockerfile misconfig. Complements release.yml's image scan (OS packages);
+  # the Java side is only visible because gradle.lockfile exists.
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret,misconfig
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true   # don't block on CVEs with no fix yet
+          exit-code: '1'         # gate the PR on fixable CRITICAL/HIGH
+          format: table          # log-readable; SARIF upload needs security-events: write (no forks)

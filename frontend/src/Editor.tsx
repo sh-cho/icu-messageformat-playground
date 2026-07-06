@@ -18,8 +18,6 @@ import {
 import { indentUnit } from "@codemirror/language";
 import { icu, highlighting, jsonLang } from "./cm-extensions";
 
-// Two-space indentation. Tab inserts spaces at the cursor; with a selection it
-// indents the block (also by two spaces, via indentUnit below).
 const INDENT = "  ";
 
 const insertSpaces: Command = (view) => {
@@ -33,7 +31,6 @@ const insertSpaces: Command = (view) => {
   return true;
 };
 
-// --- error-offset highlight (M7) -------------------------------------------
 const setErrorOffset = StateEffect.define<number | null>();
 
 const errorMark = Decoration.mark({ class: "cm-error-mark" });
@@ -64,8 +61,7 @@ const errorField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
-// Theme driven entirely by CSS variables, so flipping data-theme on <html>
-// restyles the editor without rebuilding it.
+// CSS-variable theme, so flipping data-theme on <html> restyles without rebuild.
 const cssVarTheme = EditorView.theme({
   "&": { height: "100%", backgroundColor: "transparent", color: "var(--text)" },
   ".cm-scroller": { fontFamily: "inherit" },
@@ -103,15 +99,12 @@ export default function Editor({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  // Create the view once.
   useEffect(() => {
     const extensions = [
       lineNumbers(),
       history(),
       indentUnit.of(INDENT),
-      // Tab inserts two spaces at the cursor; indents the block when a range is
-      // selected. Shift-Tab dedents. Bound first so Tab is captured by the
-      // editor instead of moving focus to the next pane.
+      // Bound first so Tab is captured by the editor instead of moving focus.
       keymap.of([
         { key: "Tab", run: insertSpaces, shift: indentLess },
         ...defaultKeymap,
@@ -149,7 +142,6 @@ export default function Editor({
     }
   }, [value]);
 
-  // Push the error offset into the decoration field.
   useEffect(() => {
     viewRef.current?.dispatch({ effects: setErrorOffset.of(errorOffset) });
   }, [errorOffset]);

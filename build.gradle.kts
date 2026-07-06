@@ -4,19 +4,15 @@ plugins {
     kotlin("jvm") version "2.2.20"
     kotlin("plugin.serialization") version "2.2.20"
     id("io.ktor.plugin") version "3.3.0"
-    // Native-image build (`./gradlew nativeCompile`). Applying it does NOT affect the
-    // normal JVM build — it only needs a GraalVM JDK when nativeCompile actually runs,
-    // so the regular fat-jar path keeps working on any stock JDK.
+    // Native-image build only; doesn't affect the JVM fat-jar path (GraalVM JDK is
+    // needed only when nativeCompile actually runs).
     id("org.graalvm.buildtools.native") version "1.1.3"
 }
 
 group = "com.icuplayground"
 
-// Version resolution, in priority order:
-//   1. -Pversion=... or the VERSION env var (CI passes the git tag this way; the
-//      Docker builds forward it as a build-arg since .dockerignore strips .git).
-//   2. `git describe` when building from a checkout with tags.
-//   3. "1.0.0-dev" fallback (e.g. inside Docker with no .git, no VERSION arg).
+// Version: VERSION env / -Pversion (CI passes the git tag; Docker forwards it as a
+// build-arg since .dockerignore strips .git) -> `git describe` -> "1.0.0-dev" fallback.
 version = (System.getenv("VERSION")?.takeIf { it.isNotBlank() }?.removePrefix("v") ?: run {
     runCatching {
         providers.exec { commandLine("git", "describe", "--tags", "--always", "--dirty") }
@@ -30,6 +26,18 @@ application {
 
 repositories {
     mavenCentral()
+}
+
+// Lock resolved versions to gradle.lockfile so builds fail on dependency drift, and the
+// recorded transitives let Trivy `fs` see Java CVEs. Scoped to real classpaths — locking
+// all configs would pin churny Kotlin/plugin internals. Regenerate with --write-locks.
+val lockedConfigurations = setOf(
+    "compileClasspath", "runtimeClasspath",
+    "testCompileClasspath", "testRuntimeClasspath",
+    "nativeImageClasspath", "nativeImageTestClasspath",
+)
+configurations.matching { it.name in lockedConfigurations }.configureEach {
+    resolutionStrategy.activateDependencyLocking()
 }
 
 dependencies {
@@ -47,8 +55,8 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host")
 }
 
-// Run the build on JDK 25 (mise) but emit JVM 21 bytecode so the artifact runs
-// on a stock JRE 21+ (and to satisfy Kotlin's max supported JVM target).
+// Build on JDK 25 (mise) but emit JVM 21 bytecode: runs on stock JRE 21+, and 21 is
+// Kotlin's max supported target.
 java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
@@ -64,13 +72,9 @@ tasks.test {
     useJUnitPlatform()
 }
 
-// ---------------------------------------------------------------------------
-// GraalVM native-image. Build with `./gradlew nativeCompile` on a GraalVM JDK
-// (or via Dockerfile.native, which runs it in a GraalVM container). icu4j's CLDR
-// data + the bundled frontend live as classpath resources — see the committed
-// resource-config under src/main/resources/META-INF/native-image. Reflection
-// metadata is captured by the tracing agent during the native Docker build.
-// ---------------------------------------------------------------------------
+// GraalVM native-image (`./gradlew nativeCompile`, or via Dockerfile.native). icu4j CLDR
+// data + the bundled frontend are classpath resources (see the committed resource-config
+// under src/main/resources/META-INF/native-image); reflection metadata is traced at build.
 graalvmNative {
     binaries {
         named("main") {
@@ -78,24 +82,19 @@ graalvmNative {
             mainClass.set("com.icuplayground.ApplicationKt")
             buildArgs.add("--no-fallback")
             buildArgs.add("-H:+ReportExceptionStackTraces")
-            // Statically link everything except glibc (zlib, libstdc++, …). The runtime
-            // binary then needs only a glibc, so it runs on a minimal distroless/base
-            // image with no extra packages — see Dockerfile.native. (Full --static would
-            // need a musl toolchain in the build image; this avoids that while still
-            // dropping the Debian runtime layer.)
+            // Link everything but glibc statically (zlib, libstdc++, …) so the binary runs
+            // on a minimal distroless/base image. Full --static would need a musl toolchain.
             buildArgs.add("-H:+StaticExecutableWithDynamicLibC")
         }
     }
-    // Pull community-maintained reachability metadata (logback, etc.) automatically.
+    // Pull community reachability metadata (logback, etc.) automatically.
     metadataRepository {
         enabled.set(true)
     }
 }
 
-// ---------------------------------------------------------------------------
-// Frontend build: `pnpm install && pnpm build` writes its dist into
-// src/main/resources/static, which Ktor serves and the fat jar bundles.
-// ---------------------------------------------------------------------------
+// Frontend: `pnpm build` writes its dist into src/main/resources/static, which Ktor
+// serves and the fat jar bundles.
 val frontendDir = layout.projectDirectory.dir("frontend")
 val staticDir = layout.projectDirectory.dir("src/main/resources/static")
 val isWindows = System.getProperty("os.name").lowercase().contains("win")

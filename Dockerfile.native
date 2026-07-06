@@ -1,7 +1,6 @@
-# GraalVM native-image build. Produces a small, ~50ms-cold-start binary.
-# Build:  docker build -f Dockerfile.native -t icu-playground:native .
-# Heavier than the JVM image (Dockerfile): native compilation needs several minutes
-# and ~6GB RAM. The JVM image stays the reliable default; this is the opt-in fast path.
+# GraalVM native-image build: small ~50ms-cold-start binary. Heavier than the JVM image
+# (several minutes, ~6GB RAM) — the opt-in fast path; the JVM image stays the default.
+# Build: docker build -f Dockerfile.native -t icu-playground:native .
 
 # --- 1. Frontend: build the React bundle into src/main/resources/static ---------
 FROM node:26-bookworm AS frontend
@@ -12,9 +11,8 @@ COPY . .
 RUN cd frontend && pnpm install --frozen-lockfile && pnpm run build
 
 # --- 2. Native build: trace reflection with the agent, then nativeCompile --------
-# GraalVM for JDK 25: the native-build-tools metadata repo needs the newer
-# reachability-metadata schema that the :21 image's GraalVM doesn't support.
-# Our bytecode targets JVM 21, which a 25 native-image toolchain compiles fine.
+# GraalVM for JDK 25: the metadata repo needs a newer reachability schema than the :21
+# image's GraalVM. Our JVM-21 bytecode compiles fine on a 25 toolchain.
 FROM ghcr.io/graalvm/native-image-community:25 AS build
 # gradlew needs xargs (findutils), absent from this Oracle Linux base.
 RUN microdnf install -y findutils && microdnf clean all
@@ -22,25 +20,21 @@ RUN microdnf install -y findutils && microdnf clean all
 ARG VERSION=1.0.0-dev
 ENV VERSION=${VERSION}
 WORKDIR /src
-# Bring in the repo plus the already-built frontend, so we can skip the pnpm tasks.
+# Repo + already-built frontend, so the pnpm tasks can be skipped.
 COPY --from=frontend /src /src
-# Fat jar first (frontend tasks skipped — assets are already present).
 RUN ./gradlew --no-daemon buildFatJar -x buildFrontend -x installFrontend
-# Capture runtime reflection metadata with the tracing agent. The headless pass
-# (-Dheadless.warmup, defined in Application.kt) drives icu4j and the reflective
-# serializer lookups in-process — no server, no HTTP — so the reflection native-image
-# can't see statically is recorded. Output auto-discovered under META-INF/native-image.
+# Capture reflection metadata with the tracing agent: the headless pass (-Dheadless.warmup,
+# see Application.kt) drives icu4j + reflective serializer lookups so native-image records
+# what it can't see statically. Output under META-INF/native-image.
 RUN java -agentlib:native-image-agent=config-output-dir=src/main/resources/META-INF/native-image/generated \
     -Dheadless.warmup=true -jar build/libs/playground-all.jar
-# Compile to a native binary -> build/native/nativeCompile/playground. The build uses
-# -H:+StaticExecutableWithDynamicLibC (see build.gradle.kts) so the binary links zlib
-# etc. statically and depends only on glibc — letting the runtime image below carry no
-# extra packages.
+# Compile to a native binary. -H:+StaticExecutableWithDynamicLibC (build.gradle.kts) links
+# zlib etc. statically so it depends only on glibc — runtime image needs no extra packages.
 RUN ./gradlew --no-daemon nativeCompile -x buildFrontend -x installFrontend
 
 # --- 3. Runtime: distroless (glibc only, no shell/pkg manager, runs non-root) ----
-# The mostly-static binary needs just a glibc, which distroless/base provides. No apt
-# layer, no shell, and the :nonroot tag runs as uid 65532 out of the box.
+# distroless/base provides the glibc the mostly-static binary needs — no apt, no shell;
+# :nonroot runs as uid 65532.
 FROM gcr.io/distroless/base-debian12:nonroot
 ARG VERSION=1.0.0-dev
 ARG REVISION=unknown

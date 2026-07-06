@@ -18,7 +18,6 @@ class PrettyPrinterTest {
         val src = "{count, plural, =0 {none} one {# item} other {# items}}"
         val pretty = IcuPrettyPrinter.prettify(src, Engine.MF1)
         assertTrue(pretty.contains("\n"), "expected multiline output:\n$pretty")
-        // Output is identical for representative counts.
         for (n in listOf(0, 1, 5)) {
             val args = """{ "count": $n }"""
             assertEquals(render(src, "en-US", args), render(pretty, "en-US", args))

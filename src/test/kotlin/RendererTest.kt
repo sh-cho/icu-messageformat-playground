@@ -18,8 +18,6 @@ private fun render(
 
 class RendererTest {
 
-    // ---- MF1: the handoff §13 examples ------------------------------------
-
     @Test
     fun `plural exact zero ko`() {
         val r = render(
@@ -61,8 +59,6 @@ class RendererTest {
         assertEquals("$1,234.50", r.output)
     }
 
-    // ---- Coercion ---------------------------------------------------------
-
     @Test
     fun `tagged date renders`() {
         val r = render(
@@ -72,7 +68,7 @@ class RendererTest {
         )
         assertNull(r.error, "unexpected error: ${r.error}")
         assertNotNull(r.output)
-        // long format includes the year; locale-specific wording varies by ICU version
+        // Assert only the year: locale-specific wording varies by ICU version.
         assert(r.output!!.contains("2025")) { "expected year in '${r.output}'" }
     }
 
@@ -94,8 +90,6 @@ class RendererTest {
         assertEquals(ErrorType.TYPE_MISMATCH, r.error?.type)
     }
 
-    // ---- Errors -----------------------------------------------------------
-
     @Test
     fun `syntax error is reported`() {
         val r = render("{count, plural, one {# item} ")
@@ -109,8 +103,6 @@ class RendererTest {
         assertNull(r.output)
         assertEquals(ErrorType.MISSING_ARG, r.error?.type)
     }
-
-    // ---- MF2 (technical preview) -----------------------------------------
 
     @Test
     fun `mf2 match one`() {

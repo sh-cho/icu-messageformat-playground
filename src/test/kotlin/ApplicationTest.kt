@@ -33,7 +33,6 @@ class ApplicationTest {
             contentType(ContentType.Application.Json)
             setBody("""{"engine":"mf1","template":"{count, plural, one {# ","locale":"en-US","args":{"count":1}}""")
         }
-        // §5: errors are normal flow — HTTP 200, never 4xx.
         assertEquals(HttpStatusCode.OK, res.status)
         assertTrue("SYNTAX" in res.bodyAsText())
     }

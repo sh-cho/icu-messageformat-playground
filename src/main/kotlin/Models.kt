@@ -4,7 +4,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
-/** Engine selector for the formatter. */
 enum class Engine {
     @SerialName("mf1")
     MF1,
@@ -18,7 +17,7 @@ data class FormatRequest(
     val engine: Engine = Engine.MF1,
     val template: String,
     val locale: String = "en-US",
-    /** Argument map. Values follow the coercion rules in Coerce.kt. */
+    /** Values follow the coercion rules in Coerce.kt. */
     val args: JsonObject = JsonObject(emptyMap()),
 )
 
@@ -26,13 +25,10 @@ data class FormatRequest(
 data class FormatResponse(
     val output: String? = null,
     val error: FormatError? = null,
-    /** Arguments detected in the template, with inferred types (for scaffolding). */
     val detectedArgs: List<ArgInfo> = emptyList(),
-    /** Per-plural CLDR category coverage for this locale. */
     val pluralChecks: List<PluralCheck> = emptyList(),
 )
 
-/** A template argument and the input type inferred from how it's used. */
 @Serializable
 data class ArgInfo(
     val name: String,
@@ -81,7 +77,6 @@ data class PrettifyResponse(
     val template: String,
 )
 
-/** One locale's render result, for the multi-locale comparison view. */
 @Serializable
 data class LocaleResult(
     val tag: String,

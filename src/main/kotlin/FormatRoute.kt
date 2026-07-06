@@ -7,11 +7,10 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 
-/** Max bytes for the template / args payload — a basic guard for public hosting (§11). */
+// Payload guards for public hosting.
 private const val MAX_TEMPLATE_LEN = 100_000
 private const val MAX_ARGS_LEN = 200_000
 
-/** Returns an oversize error message, or null if the request is within limits. */
 private fun oversize(req: FormatRequest): String? = when {
     req.template.length > MAX_TEMPLATE_LEN -> "Template too large (max $MAX_TEMPLATE_LEN chars)"
     req.args.toString().length > MAX_ARGS_LEN -> "Arguments too large (max $MAX_ARGS_LEN chars)"
@@ -26,14 +25,11 @@ fun Route.formatRoutes() {
             return@post
         }
 
-        // Errors are returned as HTTP 200 + error body (§5): in a playground,
-        // an error is a normal result the frontend renders inline.
+        // Errors render inline in the playground, so return them as HTTP 200 + error body, never 4xx.
         call.respond(HttpStatusCode.OK, Renderer.renderGuarded(req))
     }
 
-    // Renders the same template/args across every locale in the dropdown, for
-    // the optional multi-locale comparison view. The request's `locale` is
-    // ignored. (`engine`, `template`, `args` are used.)
+    // Renders the same template/args across every dropdown locale; the request's `locale` is ignored.
     post("/api/format-all") {
         val req = call.receive<FormatRequest>()
         oversize(req)?.let {
@@ -50,8 +46,6 @@ fun Route.formatRoutes() {
         call.respond(HttpStatusCode.OK, results)
     }
 
-    // Pretty-prints an MF1 template (each plural/select variant on its own line).
-    // Returns the original unchanged if formatting would alter its meaning.
     post("/api/prettify") {
         val req = call.receive<FormatRequest>()
         call.respond(PrettifyResponse(IcuPrettyPrinter.prettify(req.template, req.engine)))
