@@ -46,6 +46,7 @@ LABEL org.opencontainers.image.title="icu-playground" \
       org.opencontainers.image.revision="${REVISION}"
 WORKDIR /app
 COPY --from=build /src/build/native/nativeCompile/playground /app/playground
+USER nonroot
 EXPOSE 8080
 # No Docker HEALTHCHECK (distroless has no shell/curl): probe GET /api/health instead.
 ENTRYPOINT ["/app/playground"]
