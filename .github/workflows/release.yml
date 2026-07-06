@@ -32,7 +32,7 @@ jobs:
 
       # --- JVM image: build (amd64) -> scan -> push (multi-arch) -----------------
       - id: meta-jvm
-        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ steps.img.outputs.name }}
           tags: |
@@ -92,7 +92,7 @@ jobs:
       # --- Native image: amd64 only; build -> scan -> push -----------------------
       # Native under QEMU is impractically slow / OOM-prone, so arm64 is skipped; `-native` suffix.
       - id: meta-native
-        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ steps.img.outputs.name }}
           flavor: |
