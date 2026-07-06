@@ -101,7 +101,8 @@ body {
   flex-wrap: wrap;
 }
 
-.theme-toggle {
+.theme-toggle,
+.icon-btn {
   background: var(--panel-2);
   border: 1px solid var(--border);
   color: var(--text);
@@ -116,8 +117,10 @@ body {
   justify-content: center;
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.icon-btn:hover {
   border-color: var(--accent);
+  color: var(--accent);
 }
 
 .engine-toggle {
