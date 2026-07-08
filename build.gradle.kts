@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("jvm") version "2.2.20"
+    kotlin("jvm") version "2.4.0"
     kotlin("plugin.serialization") version "2.2.20"
     id("io.ktor.plugin") version "3.3.0"
     // Native-image build only; doesn't affect the JVM fat-jar path (GraalVM JDK is
